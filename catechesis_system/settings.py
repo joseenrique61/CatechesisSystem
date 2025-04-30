@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -37,6 +38,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'mssql',
+    'accounts',
+    'core',
 ]
 
 MIDDLEWARE = [
@@ -54,7 +58,7 @@ ROOT_URLCONF = 'catechesis_system.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -74,9 +78,17 @@ WSGI_APPLICATION = 'catechesis_system.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+        'ENGINE': 'mssql', # Motor para SQL Server
+        'NAME': 'ParishDatabase', # El nombre de tu BD existente
+        # 'USER': '',         # Usuario de la BD
+        # 'PASSWORD': 'tu_contraseña_db',   # Contraseña de la BD
+        'HOST': 'localhost',         # Dirección o nombre del servidor SQL Server (e.g., 'localhost', 'servidor.dominio.com')
+        'PORT': '1433',                  # Puerto estándar de SQL Server (ajústalo si es diferente)
+        'OPTIONS': {
+            'driver': 'ODBC Driver 17 for SQL Server', # Asegúrate que el nombre del driver sea el correcto para tu sistema
+            'trusted_connection': 'yes'
+        },
+    },
 }
 
 
@@ -120,3 +132,7 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+LOGIN_URL = '/accounts/login/'
+LOGIN_REDIRECT_URL = '/dashboard/'
+LOGOUT_REDIRECT_URL = '/accounts/login/'
