@@ -126,10 +126,23 @@ class PhoneNumberType(db.Model):
 
     PhoneNumber: Mapped[List['PhoneNumber']] = relationship('PhoneNumber', back_populates='PhoneNumberType')
 
+class Role(db.Model):
+    __tablename__ = 'Role'
+    __table_args__ = (
+        PrimaryKeyConstraint('IDRole', name='pk_Role_IDRole'),
+        Index('uk_Role_Role', 'Role', unique=True),
+        {'schema': 'User'}
+    )
+    
+    IDRole: Mapped[int] = mapped_column(Integer, Identity(start=1, increment=1), primary_key=True)
+    Role: Mapped[str] = mapped_column(Unicode(20, 'Modern_Spanish_CI_AS'))
+    
+    User: Mapped[List['User']] = relationship('User', back_populates='Role')
 
 class User(db.Model):
     __tablename__ = 'User'
     __table_args__ = (
+        ForeignKeyConstraint(['IDRole'], ['User.Role.IDRole'], name='fk_Role_User'),
         PrimaryKeyConstraint('IDUser', name='pk_User_IDUser'),
         Index('uk_User_Username', 'Username', unique=True),
         {'schema': 'User'}
@@ -138,7 +151,9 @@ class User(db.Model):
     IDUser: Mapped[int] = mapped_column(Integer, Identity(start=1, increment=1), primary_key=True)
     Username: Mapped[str] = mapped_column(Unicode(100, 'Modern_Spanish_CI_AS'))
     Password: Mapped[str] = mapped_column(Unicode(100, 'Modern_Spanish_CI_AS'))
+    IDRole: Mapped[int] = mapped_column(Integer)
 
+    Role: Mapped['Role'] = relationship('Role', back_populates='User')
     Administrator: Mapped['Administrator'] = relationship('Administrator', back_populates='User')
     Catechist: Mapped['Catechist'] = relationship('Catechist', back_populates='User')
     ParishPriest: Mapped['ParishPriest'] = relationship('ParishPriest', back_populates='User')
