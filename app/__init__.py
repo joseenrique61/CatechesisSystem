@@ -15,6 +15,9 @@ def create_app(config_class=Config):
     db.init_app(app)
 
     # Registrar Blueprints
+    from app.admin.routes import bp as admin_bp
+    app.register_blueprint(admin_bp, url_prefix='/admin')
+
     from app.auth.routes import bp as auth_bp
     app.register_blueprint(auth_bp, url_prefix='/auth')
 
@@ -24,7 +27,7 @@ def create_app(config_class=Config):
     # Asegurar que los modelos sean conocidos por SQLAlchemy dentro del contexto de la app
     # Necesario si no usas algo como Flask-Migrate que los importa
     with app.app_context():
-        from . import models # Importa tus modelos adaptados
+        from .main import models # Importa tus modelos adaptados
 
     print(f"Aplicación creada. Debug: {app.debug}")
 

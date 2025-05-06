@@ -82,7 +82,11 @@ class Location(db.Model):
     Country: Mapped[str] = mapped_column(Unicode(100, 'Modern_Spanish_CI_AS'), server_default=text("('ECUADOR')"))
 
     Address: Mapped[List['Address']] = relationship('Address', back_populates='Location')
-    Person: Mapped[List['Person']] = relationship('Person', back_populates='Location')
+    Person: Mapped[List['Person']] = relationship('Person', back_populates='BirthLocation')
+
+    @staticmethod
+    def get_default_location():
+        return Location.query.filter_by(Country='Ecuador', Province='Pichincha', State='Quito').first()
 
 
 class Allergy(db.Model):
@@ -292,7 +296,7 @@ class Parish(db.Model):
 
     Address: Mapped['Address'] = relationship('Address', back_populates='Parish')
     Classroom: Mapped[List['Classroom']] = relationship('Classroom', back_populates='Parish')
-    ParishPriest: Mapped[List['ParishPriest']] = relationship('ParishPriest', back_populates='Parish')
+    ParishPriest: Mapped['ParishPriest'] = relationship('ParishPriest', back_populates='Parish')
 
 
 class Sacrament(db.Model):
@@ -365,7 +369,7 @@ class Person(db.Model):
     EmailAddress: Mapped[str] = mapped_column(Unicode(100, 'Modern_Spanish_CI_AS'))
 
     Address: Mapped['Address'] = relationship('Address', back_populates='Person')
-    Location: Mapped['Location'] = relationship('Location', back_populates='Person')
+    BirthLocation: Mapped['Location'] = relationship('Location', back_populates='Person')
     PhoneNumber: Mapped['PhoneNumber'] = relationship('PhoneNumber', back_populates='Person')
     HealthInformation: Mapped[List['HealthInformation']] = relationship('HealthInformation', back_populates='EmergencyContact', foreign_keys=[HealthInformation.IDEmergencyContact])
     ParishPriest: Mapped['ParishPriest'] = relationship('ParishPriest', back_populates='Person')
