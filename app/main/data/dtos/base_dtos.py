@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 class BaseDTO(BaseModel):
     class Config:
         from_attributes = True # Permite crear el DTO desde atributos de objeto (SQLAlchemy models)
+        arbitrary_types_allowed = True
 
 class TextBookDTO(BaseDTO):
     IDTextBook: int

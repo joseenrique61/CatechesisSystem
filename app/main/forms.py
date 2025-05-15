@@ -1,6 +1,6 @@
 from wtforms import Form, StringField, validators, FormField, DateField, RadioField, SubmitField, SelectField
 from wtforms.fields import EmailField
-from flask_wtf.file import FileAllowed, FileField
+from flask_wtf.file import FileAllowed, FileField, FileRequired
 from flask_wtf import FlaskForm
 from app.main.data.dal.sql_server.sql_models import PhoneNumberType
 
@@ -35,6 +35,6 @@ class PersonForm(Form):
 
 class ParishForm(FlaskForm):
     Name = StringField('Nombre de la parroquia', [validators.Length(min=1, max=100)])
-    Logo = FileField('Logo', render_kw={'accept': 'image/png, image/jpeg, image/gif'}, validators=[FileAllowed(['jpg', 'png', 'jpeg'])])
+    Logo = FileField('Logo', render_kw={'accept': 'image/png, image/jpeg, image/jpg'}, validators=[FileRequired(), FileAllowed(['jpg', 'png', 'jpeg'])])
     Address = FormField(AddressForm, label='Dirección')
     Submit = SubmitField('Registrar')

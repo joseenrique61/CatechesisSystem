@@ -30,3 +30,5 @@ class Config:
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ECHO = FLASK_DEBUG # Imprime consultas SQL en modo debug (útil para depurar)
+
+    UPLOAD_FOLDER = os.path.join(basedir, "app", 'static', 'uploads')

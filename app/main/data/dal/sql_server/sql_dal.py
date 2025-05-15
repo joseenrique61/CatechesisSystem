@@ -5,6 +5,7 @@ from typing import Optional
 from app.main.data.dtos.base_dtos import *
 from app.main.data.dtos.create_dtos import *
 from app.main.data.dal.sql_server.sql_models import *
+from app.main.data.image_manager import delete_image, upload_image
 
 class SQLAlchemyDAL(IDataAccessLayer):
     def __init__(self, db_session: Session):
@@ -213,8 +214,49 @@ class SQLAlchemyDAL(IDataAccessLayer):
         return RoleDTO(Role=self.db.query(Role).filter_by(Role=role).first().Role)
     
     # --- Parish Methods ---
-    def register_parish(self, parish_data: ParishCreateDTO) -> ParishDTO:
-        pass
+    def register_parish(self, parish_data: ParishCreateDTO) -> tuple[ParishDTO, bool]:
+        """
+        Registra una nueva parroquia en la base de datos.
+        
+        :param parish_data: Datos de la parroquia a registrar.
+        :return: El objeto ParishDTO creado y un bool indicando si se creó.
+        """
+        try:
+            logo_path = upload_image(parish_data.Logo)
+            
+            address, _ = self._get_or_create_address(parish_data.Address)
+            parish = Parish(
+                Name=parish_data.Name,
+                Logo=logo_path,
+                Address=address,
+            )
+            parish, success, _ = self._get_or_create(parish, [['Name']])
+            parish_dto = ParishDTO(
+                IDParish=parish.IDParish,
+                Name=parish.Name,
+                Logo=parish.Logo,
+                Address=AddressDTO(
+                    IDAddress=parish.Address.IDAddress,
+                    MainStreet=parish.Address.MainStreet,
+                    Number=parish.Address.Number,
+                    SecondStreet=parish.Address.SecondStreet,
+                    Location=LocationDTO(
+                        IDLocation=parish.Address.Location.IDLocation,
+                        Country=parish.Address.Location.Country,
+                        State=parish.Address.Location.State,
+                        Province=parish.Address.Location.Province
+                    ),
+                ),
+            )
+            db.session.commit()
+            if not success:
+                image_deleted = delete_image(logo_path)
+                if not image_deleted:
+                    raise Exception("Error al eliminar la imagen del logo tras un fallo en la creación de la parroquia.")
+            return parish_dto, success
+        except:
+            delete_image(logo_path)
+            raise
 
     def get_parish_by_id(self, parish_id: int) -> Optional[ParishDTO]:
         pass

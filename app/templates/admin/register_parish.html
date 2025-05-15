@@ -7,7 +7,7 @@
             <div class="card-body">
                 <h2 class="card-title text-center mb-4">{{ title }}</h2>
                 {% from "helpers/_formhelpers.html" import render_field %}
-                <form method=post>
+                <form method=post enctype="multipart/form-data">
                     {% for field in form %}
                         {% if field.type == 'FormField' %}
                             {% for field1 in field %}

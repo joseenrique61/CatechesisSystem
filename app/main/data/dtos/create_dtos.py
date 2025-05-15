@@ -1,5 +1,6 @@
 import datetime
 from typing import List, Optional
+from werkzeug.datastructures import FileStorage
 
 # Asumimos que todos los DTOs definidos previamente están disponibles aquí.
 # Por ejemplo:
@@ -50,7 +51,7 @@ class PersonCreateDTO(BaseDTO):
 class ParishCreateDTO(BaseDTO):
     Name: str
     Address: 'AddressCreateDTO' # Se asume que la dirección ya existe y se pasa su ID
-    Logo: Optional[bytes] = None
+    Logo: Optional[FileStorage] = None
 
 class ParishUpdateDTO(BaseDTO):
     Name: Optional[str] = None
