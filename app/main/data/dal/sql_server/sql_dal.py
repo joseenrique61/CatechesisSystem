@@ -114,7 +114,7 @@ class SQLAlchemyDAL(IDataAccessLayer):
         try:
             user = User(
                 Username=user_data.Username,
-                Role=Role.query.filter_by(Role=user_data.Role.Role).first(),
+                Role=self.db.query(Role).filter_by(Role=user_data.Role.Role).first(),
             )
             user.set_password(user_data.Password)
             user, success, _ = self._get_or_create(user, [['Username']])
@@ -169,12 +169,12 @@ class SQLAlchemyDAL(IDataAccessLayer):
         :return: Una tupla con el objeto PhoneNumberDTO creado y un booleano indicando si fue creado o no.
         """
         try:
-            phone_number_type = db.session.query(PhoneNumberType).filter_by(IDPhoneNumberType=phone_number_data.Type).first()
+            phone_number_type = self.db.query(PhoneNumberType).filter_by(IDPhoneNumberType=phone_number_data.Type).first()
             phone_number = PhoneNumber(
                 PhoneNumber=phone_number_data.Number,
                 PhoneNumberType=phone_number_type,
             )
-            phone_number, success, _ = self._get_or_create(phone_number, [['Number']])
+            phone_number, success, _ = self._get_or_create(phone_number, [['PhoneNumber']])
             return phone_number, success
         except:
             raise
@@ -205,6 +205,8 @@ class SQLAlchemyDAL(IDataAccessLayer):
                 EmailAddress=person_data.EmailAddress,
             )
             person, success, _ = self._get_or_create(person, [['FirstName', 'MiddleName', 'FirstSurname', 'SecondSurname'], ['DNI']])
+            if not success:
+                raise Exception("La persona ya existe y no se puede crear una nueva con los mismos datos.")
             return person, success
         except:
             raise
@@ -355,7 +357,7 @@ class SQLAlchemyDAL(IDataAccessLayer):
                     EmailAddress=parish_priest.Person.EmailAddress,
                 )
             )
-            db.session.commit()
+            self.db.commit()
             return parish_priest_dto, success
         except:
             raise
