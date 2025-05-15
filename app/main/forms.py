@@ -3,6 +3,7 @@ from wtforms.fields import EmailField
 from flask_wtf.file import FileAllowed, FileField, FileRequired
 from flask_wtf import FlaskForm
 from app.main.data.dal.sql_server.sql_models import PhoneNumberType
+from app import dal
 
 class LocationForm(Form):
     Country = StringField('País', [validators.Length(min=1, max=100)])
@@ -31,7 +32,7 @@ class PersonForm(Form):
 
     def __init__(self, *args, **kwargs):
         super(PersonForm, self).__init__(*args, **kwargs)
-        self.PhoneNumberType.choices = [(phone_type.IDPhoneNumberType, phone_type.PhoneNumberType) for phone_type in PhoneNumberType.query.all()]
+        self.PhoneNumberType.choices = [(phone_type.IDPhoneNumberType, phone_type.PhoneNumberType) for phone_type in dal.get_all_phone_number_types()]
 
 class ParishForm(FlaskForm):
     Name = StringField('Nombre de la parroquia', [validators.Length(min=1, max=100)])

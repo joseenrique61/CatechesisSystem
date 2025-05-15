@@ -139,7 +139,6 @@ class SQLAlchemyDAL(IDataAccessLayer):
             return location, success
         except:
             raise
-        
     
     def _get_or_create_address(self, address_data: AddressDTO) -> tuple[Address, bool, Optional[list[str]]]:
         """
@@ -211,9 +210,17 @@ class SQLAlchemyDAL(IDataAccessLayer):
         except:
             raise
 
-    
     def get_role(self, role: str) -> Optional[RoleDTO]:
         return RoleDTO(Role=self.db.query(Role).filter_by(Role=role).first().Role)
+    
+    def get_all_phone_number_types(self) -> list[PhoneNumberTypeDTO]:
+        """
+        Obtiene todos los tipos de números de teléfono disponibles en la base de datos.
+
+        :return: Una lista de PhoneNumberTypeDTO.
+        """
+        phone_number_types = self.db.query(PhoneNumberType).all()
+        return [PhoneNumberTypeDTO(IDPhoneNumberType=phone_type.IDPhoneNumberType, PhoneNumberType=phone_type.PhoneNumberType) for phone_type in phone_number_types]
     
     # --- Parish Methods ---
     def register_parish(self, parish_data: ParishCreateDTO) -> tuple[ParishDTO, bool]:
