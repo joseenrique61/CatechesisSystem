@@ -292,7 +292,7 @@ class Parish(db.Model):
     IDParish: Mapped[int] = mapped_column(Integer, Identity(start=1, increment=1), primary_key=True)
     IDAddress: Mapped[int] = mapped_column(Integer)
     Name: Mapped[str] = mapped_column(Unicode(100, 'Modern_Spanish_CI_AS'))
-    Logo: Mapped[Optional[bytes]] = mapped_column(IMAGE)
+    Logo: Mapped[str] = mapped_column(Unicode(40, 'Modern_Spanish_CI_AS'))
 
     Address: Mapped['Address'] = relationship('Address', back_populates='Parish')
     Classroom: Mapped[List['Classroom']] = relationship('Classroom', back_populates='Parish')
@@ -563,7 +563,7 @@ class ClassAuthorization(db.Model):
     IDParishPriest: Mapped[int] = mapped_column(Integer)
 
     ParishPriest: Mapped['ParishPriest'] = relationship('ParishPriest', back_populates='ClassAuthorization')
-    ParticularClass: Mapped[List['ParticularClass']] = relationship('ParticularClass', back_populates='ClassAuthorization')
+    ParticularClass: Mapped['ParticularClass'] = relationship('ParticularClass', back_populates='ClassAuthorization')
 
 
 class Catechizing(db.Model):

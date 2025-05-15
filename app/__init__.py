@@ -27,8 +27,17 @@ def create_app(config_class=Config):
     # Asegurar que los modelos sean conocidos por SQLAlchemy dentro del contexto de la app
     # Necesario si no usas algo como Flask-Migrate que los importa
     with app.app_context():
-        from .main import models # Importa tus modelos adaptados
+        from .main.data.dal.sql_server import sql_models # Importa tus modelos adaptados
 
     print(f"Aplicación creada. Debug: {app.debug}")
 
     return app
+
+def get_dal():
+    """
+    Devuelve la instancia de DAL (Data Access Layer) para interactuar con la base de datos.
+    """
+    from app.main.data.dal.sql_server.sql_dal import SQLAlchemyDAL
+    return SQLAlchemyDAL(db.session) if os.environ.get('DB_TYPE') == 'mssql' else None
+
+dal = get_dal()

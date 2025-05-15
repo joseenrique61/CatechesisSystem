@@ -1,6 +1,8 @@
-from wtforms import Form, StringField, validators, FormField, DateField, RadioField, FileField, SubmitField, SelectField
+from wtforms import Form, StringField, validators, FormField, DateField, RadioField, SubmitField, SelectField
 from wtforms.fields import EmailField
-from app.main.models import PhoneNumberType
+from flask_wtf.file import FileAllowed, FileField
+from flask_wtf import FlaskForm
+from app.main.data.dal.sql_server.sql_models import PhoneNumberType
 
 class LocationForm(Form):
     Country = StringField('País', [validators.Length(min=1, max=100)])
@@ -25,14 +27,14 @@ class PersonForm(Form):
     Address = FormField(AddressForm, label='Dirección de vivienda')
     PhoneNumber = StringField('Teléfono', [validators.Length(min=1, max=15)])
     PhoneNumberType = SelectField('Tipo de teléfono')
-    Email = EmailField('Correo electrónico', [validators.Length(min=1, max=100)])
+    EmailAddress = EmailField('Correo electrónico', [validators.Length(min=1, max=100)])
 
     def __init__(self, *args, **kwargs):
         super(PersonForm, self).__init__(*args, **kwargs)
         self.PhoneNumberType.choices = [(phone_type.IDPhoneNumberType, phone_type.PhoneNumberType) for phone_type in PhoneNumberType.query.all()]
 
-class ParishForm(Form):
+class ParishForm(FlaskForm):
     Name = StringField('Nombre de la parroquia', [validators.Length(min=1, max=100)])
-    Logo = FileField('Logo')
+    Logo = FileField('Logo', render_kw={'accept': 'image/png, image/jpeg, image/gif'}, validators=[FileAllowed(['jpg', 'png', 'jpeg'])])
     Address = FormField(AddressForm, label='Dirección')
     Submit = SubmitField('Registrar')

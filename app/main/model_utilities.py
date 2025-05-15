@@ -2,13 +2,15 @@ from flask import flash
 from app import db
 from sqlalchemy.exc import IntegrityError
 
-from app.main.models import Address, Location, Person, PhoneNumber, PhoneNumberType, Role, User
+from app.main.data.dal.sql_server.sql_models import Address, Location, Person, PhoneNumber, PhoneNumberType, Role, User
 
 def insert_model(model, attribute_lists: list[list[str]]) -> tuple[object, bool, int]:
     """
     Insert a model into the database.
+
     :param model: The model to insert.
-    :return: True if the model was inserted successfully, False otherwise. The model itself, whether it is the passed to the function or the one from the db, is returned.
+    :param attribute_lists: A list of lists of attributes to check for duplicates.
+    :return: First, the model itself, whether it is the passed to the function or the one from the db, is returned. Second, True if the model was inserted successfully, False otherwise. Last, the index of the model in the attribute_lists is returned.
     """
     try:
         db.session.add(model)
@@ -39,14 +41,14 @@ def insert_model(model, attribute_lists: list[list[str]]) -> tuple[object, bool,
         db.session.rollback()
         raise e
 
-def register_user(userForm) -> tuple[User, bool]:
+def register_user(user__form) -> tuple[User, bool]:
     success = True
     try:
         user = User(
-            Username=userForm.Username.data,
+            Username=user__form.Username.data,
             Role=Role.query.filter_by(Role='ParishPriest').first(),
         )
-        user.set_password(userForm.Password.data)
+        user.set_password(user__form.Password.data)
 
         user, correct, _ = insert_model(user, [['Username']])
         if not correct:
@@ -58,13 +60,13 @@ def register_user(userForm) -> tuple[User, bool]:
         success = False
     return user, success
 
-def register_location(locationForm) -> tuple[Location, bool]:
+def register_location(location_form) -> tuple[Location, bool]:
     success = True
     try:
         location = Location(
-            Country=locationForm.Country.data,
-            State=locationForm.State.data,
-            Province=locationForm.Province.data,
+            Country=location_form.Country.data,
+            State=location_form.State.data,
+            Province=location_form.Province.data,
         )
 
         location, _, _ = insert_model(location, [['Country', 'State', 'Province']])
@@ -74,14 +76,14 @@ def register_location(locationForm) -> tuple[Location, bool]:
         success = False
     return location, success
 
-def register_address(addressForm) -> tuple[Address, bool]:
+def register_address(address_form) -> tuple[Address, bool]:
     success = True
     try:
-        location, success = register_location(addressForm.Location)
+        location, success = register_location(address_form.Location)
         address = Address(
-            MainStreet=addressForm.MainStreet.data,
-            Number=addressForm.Number.data,
-            SecondStreet=addressForm.SecondStreet.data,
+            MainStreet=address_form.MainStreet.data,
+            Number=address_form.Number.data,
+            SecondStreet=address_form.SecondStreet.data,
             Location=location,
         )
 
@@ -92,12 +94,12 @@ def register_address(addressForm) -> tuple[Address, bool]:
         success = False
     return address, success
 
-def register_phone(personForm) -> tuple[PhoneNumber, bool]:
+def register_phone(person_form) -> tuple[PhoneNumber, bool]:
     success = True
     try:
         phoneNumber = PhoneNumber(
-            PhoneNumber=personForm.PhoneNumber.data,
-            PhoneNumberType=PhoneNumberType.query.get(personForm.PhoneNumberType.data),
+            PhoneNumber=person_form.PhoneNumber.data,
+            PhoneNumberType=PhoneNumberType.query.get(person_form.PhoneNumberType.data),
         )
 
         phoneNumber, _, _ = insert_model(phoneNumber, [['PhoneNumber']])
@@ -107,25 +109,25 @@ def register_phone(personForm) -> tuple[PhoneNumber, bool]:
         success = False
     return phoneNumber, success
 
-def register_person(personForm) -> tuple[object, bool]:
+def register_person(person_form) -> tuple[object, bool]:
     success = True
     try:
-        birthLocation, success = register_location(personForm.BirthLocation)
-        phoneNumber, success1 = register_phone(personForm)
-        address, success2 = register_address(personForm.Address)
+        birthLocation, success = register_location(person_form.BirthLocation)
+        phoneNumber, success1 = register_phone(person_form)
+        address, success2 = register_address(person_form.Address)
 
         person = Person(
-            FirstName=personForm.FirstName.data,
-            MiddleName=personForm.MiddleName.data,
-            FirstSurname=personForm.FirstSurname.data,
-            SecondSurname=personForm.SecondSurname.data,
-            DNI=personForm.DNI.data,
-            BirthDate=personForm.BirthDate.data,
+            FirstName=person_form.FirstName.data,
+            MiddleName=person_form.MiddleName.data,
+            FirstSurname=person_form.FirstSurname.data,
+            SecondSurname=person_form.SecondSurname.data,
+            DNI=person_form.DNI.data,
+            BirthDate=person_form.BirthDate.data,
             BirthLocation=birthLocation,
-            Gender=personForm.Gender.data,
+            Gender=person_form.Gender.data,
             PhoneNumber=phoneNumber,
             Address=address,
-            EmailAddress=personForm.Email.data,
+            EmailAddress=person_form.Email.data,
         )
         person, correct, option = insert_model(person, [['FirstName', 'MiddleName', 'FirstSurname', 'SecondSurname'], ['DNI']])
         if not correct:

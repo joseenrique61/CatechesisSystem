@@ -1,7 +1,7 @@
 from wtforms import Form, StringField, SubmitField, validators, FormField, SelectField, PasswordField
 from flask_wtf import FlaskForm
 from app.main.forms import PersonForm
-from app.main.models import Parish
+from app.main.data.dal.sql_server.sql_models import Parish
 
 class UserForm(FlaskForm):
     Username = StringField('Nombre de usuario', [validators.Length(min=1, max=100)])

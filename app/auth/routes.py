@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, flash, redirect, url_for, request, session
 from app import db
-from app.main.models import User # Importa tu modelo de usuario adaptado
+from app.main.data.dal.sql_server.sql_models import User # Importa tu modelo de usuario adaptado
 
 bp = Blueprint('auth', __name__) # No necesita url_prefix aquí, se define al registrar
 
