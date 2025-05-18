@@ -1,12 +1,11 @@
 from abc import ABC, abstractmethod
 from app.main.data.dtos.base_dtos import *
-from app.main.data.dtos.create_dtos import *
 
 class IDataAccessLayer(ABC):
 
     # --- Parish Methods ---
     @abstractmethod
-    def register_parish(self, parish_data: ParishCreateDTO) -> ParishDTO:
+    def register_parish(self, parish_data: ParishDTO) -> ParishDTO:
         pass
 
     @abstractmethod
@@ -18,7 +17,7 @@ class IDataAccessLayer(ABC):
         pass
 
     @abstractmethod
-    def update_parish(self, parish_id: int, parish_data: ParishUpdateDTO) -> Optional[ParishDTO]:
+    def update_parish(self, parish_id: int, parish_data: ParishDTO) -> Optional[ParishDTO]:
         pass
 
     @abstractmethod
@@ -27,7 +26,7 @@ class IDataAccessLayer(ABC):
 
     # --- Parish Priest Methods ---
     @abstractmethod
-    def register_parish_priest(self, priest_data: ParishPriestCreateDTO) -> ParishPriestDTO:
+    def register_parish_priest(self, priest_data: ParishPriestDTO) -> ParishPriestDTO:
         pass
 
     @abstractmethod
@@ -39,7 +38,7 @@ class IDataAccessLayer(ABC):
         pass
 
     @abstractmethod
-    def update_parish_priest(self, priest_id: int, priest_data: ParishPriestUpdateDTO) -> Optional[ParishPriestDTO]:
+    def update_parish_priest(self, priest_id: int, priest_data: ParishPriestDTO) -> Optional[ParishPriestDTO]:
         pass
 
     @abstractmethod
@@ -49,7 +48,7 @@ class IDataAccessLayer(ABC):
 
     # --- Catechist Methods ---
     @abstractmethod
-    def register_catechist(self, catechist_data: CatechistCreateDTO) -> CatechistDTO:
+    def register_catechist(self, catechist_data: CatechistDTO) -> CatechistDTO:
         pass
 
     @abstractmethod
@@ -61,7 +60,7 @@ class IDataAccessLayer(ABC):
         pass
 
     @abstractmethod
-    def update_catechist(self, catechist_id: int, catechist_data: CatechistUpdateDTO) -> Optional[CatechistDTO]:
+    def update_catechist(self, catechist_id: int, catechist_data: CatechistDTO) -> Optional[CatechistDTO]:
         pass
 
     @abstractmethod
@@ -70,7 +69,7 @@ class IDataAccessLayer(ABC):
 
     # --- Catechizing Methods ---
     @abstractmethod
-    def register_catechizing(self, catechizing_data: CatechizingCreateDTO) -> CatechizingDTO:
+    def register_catechizing(self, catechizing_data: CatechizingDTO) -> CatechizingDTO:
         pass
 
     @abstractmethod
@@ -86,7 +85,7 @@ class IDataAccessLayer(ABC):
         pass
 
     @abstractmethod
-    def update_catechizing(self, catechizing_id: int, catechizing_data: CatechizingUpdateDTO) -> Optional[CatechizingDTO]:
+    def update_catechizing(self, catechizing_id: int, catechizing_data: CatechizingDTO) -> Optional[CatechizingDTO]:
         pass
 
     @abstractmethod
@@ -104,4 +103,24 @@ class IDataAccessLayer(ABC):
 
     @abstractmethod
     def get_role(self, role: str) -> Optional[RoleDTO]:
+        pass
+
+    @abstractmethod
+    def get_blood_type_by_id(self, blood_type_id: int) -> Optional[BloodTypeDTO]:
+        pass
+    
+    @abstractmethod
+    def get_phone_number_type_by_id(self, phone_number_type_id: int) -> Optional[PhoneNumberTypeDTO]:
+        pass
+    
+    @abstractmethod
+    def get_all_phone_number_types(self) -> List[PhoneNumberTypeDTO]:
+        pass
+    
+    @abstractmethod
+    def get_level_by_name(self, level: str) -> Optional[LevelDTO]:
+        pass
+
+    @abstractmethod
+    def get_class_by_id(self, class_id: int) -> Optional[ClassDTO]:
         pass

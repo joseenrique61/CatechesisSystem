@@ -171,3 +171,6 @@ cython_debug/
 
 # Uploads folder
 uploads/
+
+# Other
+test.py

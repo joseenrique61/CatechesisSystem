@@ -1,7 +1,6 @@
 from typing import List, Optional
 
 from sqlalchemy import Boolean, CHAR, Column, Date, ForeignKeyConstraint, Identity, Index, Integer, PrimaryKeyConstraint, String, TEXT, Table, Unicode, text
-from sqlalchemy.dialects.mssql import IMAGE
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 import datetime
 from app import db

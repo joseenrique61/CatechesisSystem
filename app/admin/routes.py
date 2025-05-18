@@ -4,7 +4,6 @@ from app.main.forms import ParishForm
 from app.main.model_utilities import *
 from app import dal
 from app.main.data.dtos.base_dtos import *
-from app.main.data.dtos.create_dtos import *
 from app.main.data.dtos.dtos_utilities.dtos_from_form import parish_priest_from_form, parish_from_form
 
 bp = Blueprint('admin', __name__)
@@ -14,7 +13,7 @@ bp = Blueprint('admin', __name__)
 def register_parish_priest():
     form = ParishPriestForm(request.form)
     if request.method == 'POST' and form.validate_on_submit():
-        parish_priest = parish_priest_from_form(form)
+        parish_priest = ParishPriestDTO.from_db_obj(form, depth=-1, custom_var_path="data")
 
         try:
             parish_priest, success = dal.register_parish_priest(parish_priest)

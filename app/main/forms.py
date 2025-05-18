@@ -1,8 +1,7 @@
-from wtforms import Form, StringField, validators, FormField, DateField, RadioField, SubmitField, SelectField
+from wtforms import Form, StringField, validators, FormField, DateField, RadioField, SubmitField, SelectField, FieldList
 from wtforms.fields import EmailField
 from flask_wtf.file import FileAllowed, FileField, FileRequired
 from flask_wtf import FlaskForm
-from app.main.data.dal.sql_server.sql_models import PhoneNumberType
 from app import dal
 
 class LocationForm(Form):
@@ -16,6 +15,15 @@ class AddressForm(Form):
     SecondStreet = StringField('Calle secundaria', [validators.Length(min=1, max=100)])
     Location = FormField(LocationForm, label='Ubicación')
 
+class PhoneNumberForm(Form):
+    PhoneNumber = StringField('Teléfono', [validators.Length(min=1, max=15)])
+    IDPhoneNumberType = SelectField('Tipo de teléfono')
+
+    def __init__(self, *args, **kwargs):
+        super(PhoneNumberForm, self).__init__(*args, **kwargs)
+        self.IDPhoneNumberType.choices = [(phone_type.IDPhoneNumberType, phone_type.PhoneNumberType) for phone_type in dal.get_all_phone_number_types()]
+    
+
 class PersonForm(Form):
     FirstName = StringField('Primer nombre', [validators.Length(min=1, max=100)])
     MiddleName = StringField('Segundo nombre', [validators.Length(min=1, max=100)])
@@ -26,16 +34,13 @@ class PersonForm(Form):
     DNI = StringField('Cédula', [validators.Length(min=1, max=10)])
     Gender = RadioField('Género', choices=[('M', 'Masculino'), ('F', 'Femenino')])
     Address = FormField(AddressForm, label='Dirección de vivienda')
-    PhoneNumber = StringField('Teléfono', [validators.Length(min=1, max=15)])
-    PhoneNumberType = SelectField('Tipo de teléfono')
+    PhoneNumber = FormField(PhoneNumberForm, label="Número de teléfono")
     EmailAddress = EmailField('Correo electrónico', [validators.Length(min=1, max=100)])
 
-    def __init__(self, *args, **kwargs):
-        super(PersonForm, self).__init__(*args, **kwargs)
-        self.PhoneNumberType.choices = [(phone_type.IDPhoneNumberType, phone_type.PhoneNumberType) for phone_type in dal.get_all_phone_number_types()]
 
 class ParishForm(FlaskForm):
     Name = StringField('Nombre de la parroquia', [validators.Length(min=1, max=100)])
     Logo = FileField('Logo', render_kw={'accept': 'image/png, image/jpeg, image/jpg'}, validators=[FileRequired(), FileAllowed(['jpg', 'png', 'jpeg'])])
     Address = FormField(AddressForm, label='Dirección')
+    Classroom = FieldList(StringField('Nombre del aula'), min_entries=0, label='Aulas')
     Submit = SubmitField('Registrar')

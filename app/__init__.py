@@ -21,6 +21,9 @@ def create_app(config_class=Config):
     from app.auth.routes import bp as auth_bp
     app.register_blueprint(auth_bp, url_prefix='/auth')
 
+    from app.parish_priest.routes import bp as parish_priest_bp
+    app.register_blueprint(parish_priest_bp, url_prefix='/parish_priest')
+
     from app.main.routes import bp as main_bp
     app.register_blueprint(main_bp) # Sin prefijo para rutas como '/'
 

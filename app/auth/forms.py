@@ -15,9 +15,9 @@ class UserForm(FlaskForm):
 class ParishPriestForm(FlaskForm):
     User = FormField(UserForm, label='Datos de usuario')
     Person = FormField(PersonForm, label='Datos personales')
-    Parish = SelectField('Parroquia', coerce=int, choices=[])
+    IDParish = SelectField('Parroquia', coerce=int, choices=[])
     Submit = SubmitField('Registrar')
 
     def __init__(self, *args, **kwargs):
         super(ParishPriestForm, self).__init__(*args, **kwargs)
-        self.Parish.choices = [(parish.IDParish, parish.Name) for parish in Parish.query.all()]
+        self.IDParish.choices = [(parish.IDParish, parish.Name) for parish in Parish.query.all()]
