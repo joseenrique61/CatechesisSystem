@@ -155,6 +155,7 @@ class ParishDTO(BaseDTO):
     IDParish: Optional[int] = None
     Name: str
     Logo: Optional[str] = None
+    LogoImage: Optional[FileStorage] = None
     Address: Optional['AddressDTO'] = None
     Classroom: List['ClassroomDTO'] = []
     ParishPriest: Optional['ParishPriestDTO'] = None
@@ -366,8 +367,8 @@ class ParticularClassDTO(BaseDTO):
 # class ClassroomCreateDTO(BaseDTO):
 #     ClassroomName: str
 
-class ParishCreateDTO(ParishDTO):
-    LogoImage: Optional[FileStorage] = None
+# class ParishCreateDTO(ParishDTO):
+#     LogoImage: Optional[FileStorage] = None
 
 # class ParishUpdateDTO(BaseDTO):
 #     Name: Optional[str] = None

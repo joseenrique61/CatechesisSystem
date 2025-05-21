@@ -3,6 +3,7 @@ from flask_wtf import FlaskForm
 from app.main.forms import PersonForm
 from app.main.data.dal.sql_server.sql_models import Parish
 from werkzeug.security import generate_password_hash
+from app import dal
 
 class RoleForm(FlaskForm):
     Role = StringField("")
@@ -29,4 +30,4 @@ class ParishPriestForm(FlaskForm):
 
     def __init__(self, *args, **kwargs):
         super(ParishPriestForm, self).__init__(*args, **kwargs)
-        self.IDParish.choices = [(parish.IDParish, parish.Name) for parish in Parish.query.all()]
+        self.IDParish.choices = [(parish.IDParish, parish.Name) for parish in dal.get_all_parishes()]

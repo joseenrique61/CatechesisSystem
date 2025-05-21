@@ -13,7 +13,7 @@ class IDataAccessLayer(ABC):
         pass
 
     @abstractmethod
-    def get_all_parishes(self, skip: int = 0, limit: int = 100) -> List[ParishDTO]:
+    def get_all_parishes(self) -> List[ParishDTO]:
         pass
 
     @abstractmethod
@@ -34,7 +34,7 @@ class IDataAccessLayer(ABC):
         pass # ID se refiere a Person.IDPerson
 
     @abstractmethod
-    def get_parish_priests_by_parish(self, parish_id: int, skip: int = 0, limit: int = 100) -> List[ParishPriestDTO]:
+    def get_parish_priests_by_parish(self, parish_id: int) -> List[ParishPriestDTO]:
         pass
 
     @abstractmethod
@@ -56,7 +56,7 @@ class IDataAccessLayer(ABC):
         pass # ID se refiere a Person.IDPerson
 
     @abstractmethod
-    def get_all_catechists(self, skip: int = 0, limit: int = 100) -> List[CatechistDTO]:
+    def get_all_catechists(self) -> List[CatechistDTO]:
         pass
 
     @abstractmethod
@@ -77,11 +77,11 @@ class IDataAccessLayer(ABC):
         pass # ID se refiere a Person.IDPerson
 
     @abstractmethod
-    def get_catechizings_by_class(self, class_id: int, skip: int = 0, limit: int = 100) -> List[CatechizingDTO]:
+    def get_catechizings_by_class(self, class_id: int) -> List[CatechizingDTO]:
         pass
 
     @abstractmethod
-    def get_all_catechizings(self, skip: int = 0, limit: int = 100) -> List[CatechizingDTO]:
+    def get_all_catechizings(self) -> List[CatechizingDTO]:
         pass
 
     @abstractmethod

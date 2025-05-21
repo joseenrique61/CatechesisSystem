@@ -2,10 +2,8 @@ from flask import Blueprint, render_template, request, session, redirect, url_fo
 from app.auth.forms import ParishPriestForm
 from app.main.data.duplicate_column_exception import DuplicateColumnException
 from app.main.forms import ParishForm
-from app.main.model_utilities import *
 from app import dal
 from app.main.data.dtos.base_dtos import *
-from app.main.data.dtos.dtos_utilities.dtos_from_form import parish_from_form
 
 bp = Blueprint('admin', __name__)
 
@@ -46,16 +44,18 @@ def register_parish_priest():
 def register_parish():
     form = ParishForm()
     if request.method == 'POST' and form.validate_on_submit():
-        parish = parish_from_form(form, request)
+        parish = ParishDTO.from_other_obj(form, depth=-1, custom_var_path="data")
 
         try:
             parish, success = dal.register_parish(parish)
             if not success:
                 flash(f'La parroquia {parish.Name} ya existe.', 'danger')
                 return render_template('admin/register_parish.html', title='Registrar Parroquia', form=form)
-        except Exception as e:
-            print(f"Error inserting parish: {e}")
-            flash('Error al registrar la parroquia.', 'danger')
+        except DuplicateColumnException as e:
+            print(f"Error inserting parish priest: {e}")
+
+            error_message = f"Ya existe una parroquia con el nombre {parish.Name}"
+            flash(error_message, 'danger')
             return render_template('admin/register_parish.html', title='Registrar Parroquia', form=form)
 
         flash(f'¡Parroquia {parish.Name} registrada exitosamente!', 'success')

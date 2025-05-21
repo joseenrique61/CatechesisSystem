@@ -1,6 +1,5 @@
 from app.main.data.dal.i_data_access_layer import IDataAccessLayer
 from sqlalchemy.orm import Session
-from sqlalchemy.exc import IntegrityError
 from typing import Optional
 from app.main.data.dal.sql_server.sql_alchemy_adder import DBManager
 from app.main.data.dtos.base_dtos import *
@@ -10,221 +9,6 @@ from app.main.data.image_manager import delete_image, upload_image
 class SQLAlchemyDAL(IDataAccessLayer):
     def __init__(self, db_session: Session):
         self.db = db_session
-
-    def _get_or_create(self, model_instance, unique_constraints: list[list[str]]) -> tuple[object, bool, Optional[list[str]]]:
-        """
-        Tries to get an existing instance from the DB based on unique constraints,
-        or creates a new one.
-
-        :param model_instance: A new, transient model instance with data.
-        :param unique_constraints: A list of lists of attribute names.
-                                   Each inner list represents a unique constraint.
-                                   Example: [['Username'], ['Email']]
-        :return: (instance, created_bool, conflicting_constraint_attrs_list_or_None)
-                 - instance: The persisted instance (either existing or newly created).
-                 - created_bool: True if a new instance was created, False if an existing one was found.
-                 - conflicting_constraint_attrs_list_or_None: If an existing instance was found by query,
-                   this is the list of attributes that matched. If created, or if found via IntegrityError fallback,
-                   this might be None or determined differently.
-        """
-        model_class = type(model_instance)
-
-        # 1. Try to find an existing instance by querying unique constraints
-        for constraint_attrs in unique_constraints:
-            filter_conditions = {}
-            valid_constraint = True
-            for attr_name in constraint_attrs:
-                if hasattr(model_instance, attr_name):
-                    filter_conditions[attr_name] = getattr(model_instance, attr_name)
-                else:
-                    # Esto no debería ocurrir si los atributos son correctos
-                    valid_constraint = False
-                    break
-            
-            if not valid_constraint or not filter_conditions:
-                continue # Pasa al siguiente conjunto de restricciones si este es inválido
-
-            existing_instance = self.db.query(model_class).filter_by(**filter_conditions).one_or_none()
-            if existing_instance:
-                # Desvincular la instancia propuesta si no es la que vamos a usar,
-                # para evitar problemas de sesión si se añadió accidentalmente antes.
-                if model_instance in self.db:
-                    self.db.expunge(model_instance)
-                return existing_instance, False, constraint_attrs
-
-        # 2. If not found, try to add the new instance
-        try:
-            # Asegurarse de que la instancia está asociada a la sesión actual
-            # Si venía de otra sesión o fue creada sin sesión.
-            # Si ya está en la sesión y es 'dirty', está bien.
-            # Si es 'transient', se añadirá.
-            # Si es 'detached', se necesita un merge o un add.
-            # Por simplicidad, si no está en la sesión, la añadimos.
-            if model_instance not in self.db:
-                 self.db.add(model_instance)
-            else: # Si ya estaba, pero quizás de una operación fallida anterior, refrescarla
-                pass # Dejarla como está si ya está 'dirty'
-
-            self.db.flush() # Intenta la inserción
-            return model_instance, True, None
-        except IntegrityError:
-            self.db.rollback()
-            # 3. Fallback: If IntegrityError occurs (e.g., due to a race condition),
-            #    query again to get the conflicting instance.
-            #    Esta parte es más compleja porque el IntegrityError no te dice QUÉ restricción falló.
-            #    Podríamos re-intentar las búsquedas, o simplemente asumir que uno de los constraints falló.
-            #    Para una implementación más simple del fallback, podrías solo re-intentar la primera búsqueda
-            #    o una búsqueda combinada si es posible.
-            
-            # Re-intentar la búsqueda es más seguro tras un rollback.
-            for constraint_attrs in unique_constraints:
-                filter_conditions = {}
-                # ... (repetir lógica de construcción de filter_conditions) ...
-                for attr_name in constraint_attrs:
-                    if hasattr(model_instance, attr_name):
-                        filter_conditions[attr_name] = getattr(model_instance, attr_name)
-                
-                if not filter_conditions: continue
-
-                conflicting_instance = self.db.query(model_class).filter_by(**filter_conditions).one_or_none()
-                if conflicting_instance:
-                    if model_instance in self.db: # Asegurarse que la instancia fallida no esté en la sesión
-                        self.db.expunge(model_instance)
-                    return conflicting_instance, False, constraint_attrs
-            
-            # Si llegamos aquí después de un IntegrityError y no encontramos el conflicto, algo raro pasó.
-            # O la instancia original fue modificada entre el flush fallido y esta re-búsqueda.
-            # Es importante desvincular la instancia original si no se va a usar.
-            if model_instance in self.db.new: # si se quedó en el estado 'new' pero no se pudo hacer flush
-                self.db.expunge(model_instance) # Quitarla de la sesión para evitar problemas
-
-            raise # Re-lanzar IntegrityError si no se pudo resolver
-        except Exception as e:
-            self.db.rollback()
-            raise e
-
-    # --- General Methods ---
-    def _get_or_create_user(self, user_data: UserDTO) -> tuple[User, bool]:
-        """
-        Registra un nuevo usuario en la base de datos.
-
-        :param user_data: Datos del usuario a registrar.
-        :return: Una tupla con el objeto UserDTO creado y un booleano indicando si fue creado o no.
-        """
-        try:
-            user = User(
-                Username=user_data.Username,
-                Role=self.db.query(Role).filter_by(Role=user_data.Role.Role).first(),
-            )
-            user.set_password(user_data.Password)
-            user, success, _ = self._get_or_create(user, [['Username']])
-            return user, success
-        except:
-            raise
-
-    def _get_or_create_location(self, location_data: LocationDTO) -> tuple[Location, bool]:
-        """
-        Registra una nueva ubicación en la base de datos.
-
-        :param location_data: Datos de la ubicación a registrar.
-        :return: Una tupla con el objeto LocationDTO creado y un booleano indicando si fue creado o no.
-        """
-        try:
-            location = Location(
-                Country=location_data.Country,
-                State=location_data.State,
-                Province=location_data.Province,
-            )
-            location, success, _ = self._get_or_create(location, [['Country', 'State', 'Province']])
-            return location, success
-        except:
-            raise
-    
-    def _get_or_create_address(self, address_data: AddressDTO) -> tuple[Address, bool, Optional[list[str]]]:
-        """
-        Registra una nueva dirección en la base de datos.
-
-        :param address_data: Datos de la dirección a registrar.
-        :return: Una tupla con el objeto AddressDTO creado un booleano indicando si fue creado o no, y una lista de errores ocurridos.
-        """
-        try:
-            location, _ = self._get_or_create_location(address_data.Location)
-            address = Address(
-                MainStreet=address_data.MainStreet,
-                Number=address_data.Number,
-                SecondStreet=address_data.SecondStreet,
-                Location=location,
-            )
-            address, success, _ = self._get_or_create(address, [['MainStreet', 'Number', 'SecondStreet']])
-            return address, success
-        except:
-            raise
-
-    def _get_or_create_phone_number(self, phone_number_data: PhoneNumberDTO) -> tuple[PhoneNumber, bool]:
-        """
-        Registra un nuevo número de teléfono en la base de datos.
-
-        :param phone_number_data: Datos del número de teléfono a registrar.
-        :return: Una tupla con el objeto PhoneNumberDTO creado y un booleano indicando si fue creado o no.
-        """
-        try:
-            phone_number = PhoneNumber(
-                PhoneNumber=phone_number_data.PhoneNumber,
-                IDPhoneNumberType=phone_number_data.IDPhoneNumberType,
-            )
-            phone_number, success, _ = self._get_or_create(phone_number, [['PhoneNumber']])
-            return phone_number, success
-        except:
-            raise
-    
-    def _get_or_create_person(self, person_data: PersonDTO) -> tuple[Person, bool]:
-        """
-        Registra una nueva persona en la base de datos.
-
-        :param person_data: Datos de la persona a registrar.
-        :return: Una tupla con el objeto PersonDTO creado y un booleano indicando si fue creado o no.
-        """
-        try:
-            # location, _ = self._get_or_create_location(person_data.BirthLocation)
-            # address, _ = self._get_or_create_address(person_data.Address)
-            # phone_number, _ = self._get_or_create_phone_number(person_data.PhoneNumber)
-
-            # person = Person(
-            #     FirstName=person_data.FirstName,
-            #     MiddleName=person_data.MiddleName,
-            #     FirstSurname=person_data.FirstSurname,
-            #     SecondSurname=person_data.SecondSurname,
-            #     BirthDate=person_data.BirthDate,
-            #     BirthLocation=location,
-            #     DNI=person_data.DNI,
-            #     Gender=person_data.Gender,
-            #     Address=address,
-            #     PhoneNumber=phone_number,
-            #     EmailAddress=person_data.EmailAddress,
-            # )
-            person = Person.from_other_obj(person_data, depth=-1, ignore_lists=False)
-            # person, success, _ = self._get_or_create(person, [['FirstName', 'MiddleName', 'FirstSurname', 'SecondSurname'], ['DNI']])
-            person, success, _ = DBManager.get_or_create(self.db, person)
-            if not success:
-                raise Exception("La persona ya existe y no se puede crear una nueva con los mismos datos.")
-            return person, success
-        except:
-            raise
-
-    def _get_or_create_classroom(self, classroom_data: ClassroomDTO) -> tuple[Classroom, bool]:
-        """
-        Registra un nuevo aula en la base de datos.
-        :param classroom_data: Datos del aula a registrar.
-        :return: Una tupla con el objeto ClassroomDTO creado y un booleano indicando si fue creado o no.
-        """
-        try:
-            classroom = Classroom(
-                ClassroomName=classroom_data.ClassroomName,
-            )
-            classroom, success, _ = self._get_or_create(classroom, [['ClassroomName']])
-            return classroom, success
-        except:
-            raise
 
     def get_role(self, role: str) -> Optional[RoleDTO]:
         return RoleDTO(Role=self.db.query(Role).filter_by(Role=role).first().Role)
@@ -263,90 +47,13 @@ class SQLAlchemyDAL(IDataAccessLayer):
         :param class_id: ID de la clase.
         :return: Un objeto ClassDTO.
         """
-        class_from_db = self.db.query(Class).filter_by(IDClass=class_id).first()
-        return ClassDTO(
-            IDClass=class_from_db.IDClass,
-            Classroom=[ClassroomDTO(
-                IDClassroom=classroom.IDClassroom,
-                ClassroomName=classroom.ClassroomName,
-                Parish=self.get_parish_by_id(classroom.IDParish),
-            ) for classroom in class_from_db.Classroom],
-            ClassPeriod=ClassPeriodReadDTO(
-                IDClassPeriod=class_from_db.ClassPeriod.IDClassPeriod,
-                StartDate=class_from_db.ClassPeriod.StartDate,
-                EndDate=class_from_db.ClassPeriod.EndDate,
-                CurrentPeriod=class_from_db.ClassPeriod.CurrentPeriod,
-            ),
-            Catechist=CatechistDTO(
-                IDCatechist=class_from_db.Catechist.IDCatechist,
-                Person=self.get_person_by_dni(
-                    dni=class_from_db.Catechist.Person.DNI
-                )
-            ),
-            Level=LevelDTO(
-                IDLevel=class_from_db.Level.IDLevel,
-                Name=class_from_db.Level.Name,
-                MinAge=class_from_db.Level.MinAge,
-                MaxAge=class_from_db.Level.MaxAge,
-                IDPreviousLevel=class_from_db.Level.IDPreviousLevel,
-                TextBook=self._get_text_book_from_db(class_from_db.Level.TextBook),
-                Sacrament=self._get_sacrament_from_db(class_from_db.Level.Sacrament)
-            ),
-            SupportPerson=SupportPersonDTO(
-                IDSupportPerson=class_from_db.SupportPerson.IDSupportPerson,
-                Person=self.get_person_by_dni(
-                    dni=class_from_db.SupportPerson.Person.DNI
-                )
-            ),
-            Schedule=[ScheduleDTO(
-                IDSchedule=schedule.IDSchedule,
-                StartHour=schedule.StartHour,
-                EndHour=schedule.EndHour,
-                DayOfTheWeek=DayOfTheWeekDTO(
-                    IDDayOfTheWeek=schedule.DayOfTheWeek.IDDayOfTheWeek,
-                    DayOfTheWeek=schedule.DayOfTheWeek.DayOfTheWeek,
-                )
-            ) for schedule in class_from_db.Schedule],
-        )
-
-    def _get_text_book_from_db(self, text_book: TextBook) -> Optional[TextBookDTO]:
-        return TextBookDTO(
-            IDTextBook=text_book.IDTextBook,
-            AuthorName=text_book.AuthorName,
-            ImplementationDate=text_book.ImplementationDate,
-            PagesNumber=text_book.PagesNumber,
-            NameBook=text_book.NameBook
-        )
-
-    def _get_sacrament_from_db(self, sacrament: Sacrament) -> Optional[SacramentDTO]:
-        return SacramentDTO(
-            IDSacrament=sacrament.IDSacrament,
-            Name=sacrament.Name,
-        )
+        return ClassDTO.from_other_obj(self.db.query(Class).filter_by(IDClass=class_id).first())
 
     def get_level_by_id(self, level_id):
-        level_from_db = self.db.query(Level).filter_by(IDLevel=level_id).first()
-        return LevelDTO(
-            IDLevel=level_from_db.IDLevel,
-            Name=level_from_db.Name,
-            MinAge=level_from_db.MinAge,
-            MaxAge=level_from_db.MaxAge,
-            IDPreviousLevel=level_from_db.IDPreviousLevel,
-            TextBook=self._get_text_book_from_db(level_from_db.TextBook),
-            Sacrament=self._get_sacrament_from_db(level_from_db.Sacrament)
-        )
+        return LevelDTO.from_other_obj(self.db.query(Level).filter_by(IDLevel=level_id).first())
     
     def get_level_by_name(self, level):
-        level_from_db = self.db.query(Level).filter_by(Level=level).first()
-        return LevelDTO(
-            IDLevel=level_from_db.IDLevel,
-            Name=level_from_db.Name,
-            MinAge=level_from_db.MinAge,
-            MaxAge=level_from_db.MaxAge,
-            IDPreviousLevel=level_from_db.IDPreviousLevel,
-            TextBook=self._get_text_book_from_db(level_from_db.TextBook),
-            Sacrament=self._get_sacrament_from_db(level_from_db.Sacrament)
-        )
+        return LevelDTO.from_other_obj(self.db.query(Level).filter_by(Level=level).first())
     
     # --- Parish Methods ---
     def register_parish(self, parish_data: ParishDTO) -> tuple[ParishDTO, bool]:
@@ -359,17 +66,13 @@ class SQLAlchemyDAL(IDataAccessLayer):
         try:
             logo_path = upload_image(parish_data.LogoImage)
             
-            address, _ = self._get_or_create_address(parish_data.Address)
-            classroom = [self._get_or_create_classroom(classroom)[0] for classroom in parish_data.Classroom]
-            parish = Parish(
-                Name=parish_data.Name,
-                Logo=logo_path,
-                Address=address,
-                Classroom=classroom
-            )
-            parish, success, _ = self._get_or_create(parish, [['Name']])
+            parish_data.Logo = logo_path
+            parish = Parish.from_other_obj(parish_data)
+            parish, success, _ = DBManager.get_or_create(self.db, parish)
+            
             parish_dto = ParishDTO.from_other_obj(parish)
-            db.session.commit()
+            self.db.commit()
+
             if not success:
                 image_deleted = delete_image(logo_path)
                 if not image_deleted:
@@ -382,8 +85,8 @@ class SQLAlchemyDAL(IDataAccessLayer):
     def get_parish_by_id(self, parish_id: int) -> Optional[ParishDTO]:
         return ParishDTO.from_other_obj(self.db.query(Parish).filter_by(IDParish=parish_id).first())
 
-    def get_all_parishes(self, skip: int = 0, limit: int = 100) -> List[ParishDTO]:
-        pass
+    def get_all_parishes(self) -> List[ParishDTO]:
+        return [ParishDTO.from_other_obj(parish) for parish in self.db.query(Parish).all()]
 
     def update_parish(self, parish_id: int, parish_data: ParishDTO) -> Optional[ParishDTO]:
         pass
@@ -400,84 +103,6 @@ class SQLAlchemyDAL(IDataAccessLayer):
         :return: Una tupla con el objeto ParishPriestDTO creado y un booleano indicando si fue creado o no.
         """
         try:
-            # person, _ = self._get_or_create_person(priest_data.Person)
-
-            # priest_data.User.Role = RoleDTO(Role="ParishPriest")
-            # user, user_created = self._get_or_create_user(priest_data.User)
-            # if not user_created:
-            #     raise IntegrityError("El usuario ya existe y no se puede crear un nuevo sacerdote con el mismo usuario.")
-
-            # parish_priest = ParishPriest(
-            #     Person=person,
-            #     User=user,
-            #     IDParish=priest_data.IDParish,
-            # )
-            # parish_priest, success, _ = self._get_or_create(parish_priest, [['IDParish', 'IDUser']])
-            # parish_priest_dto = ParishPriestDTO(
-            #     IDParishPriest=parish_priest.IDParishPriest,
-            #     User=UserDTO(
-            #         IDUser=parish_priest.User.IDUser,
-            #         Username=parish_priest.User.Username,
-            #         Role=RoleDTO(
-            #             IDRole=parish_priest.User.Role.IDRole,
-            #             Role=parish_priest.User.Role.Role
-            #         )
-            #     ),
-            #     Parish=ParishDTO(
-            #         IDParish=parish_priest.Parish.IDParish,
-            #         Name=parish_priest.Parish.Name,
-            #         Logo="blabla",
-            #         Address=AddressDTO(
-            #             IDAddress=parish_priest.Parish.Address.IDAddress,
-            #             MainStreet=parish_priest.Parish.Address.MainStreet,
-            #             Number=parish_priest.Parish.Address.Number,
-            #             SecondStreet=parish_priest.Parish.Address.SecondStreet,
-            #             Location=LocationDTO(
-            #                 IDLocation=parish_priest.Parish.Address.Location.IDLocation,
-            #                 Country=parish_priest.Parish.Address.Location.Country,
-            #                 State=parish_priest.Parish.Address.Location.State,
-            #                 Province=parish_priest.Parish.Address.Location.Province
-            #             ),
-            #         ),
-            #     ),
-            #     Person=PersonDTO(
-            #         IDPerson=parish_priest.Person.IDPerson,
-            #         FirstName=parish_priest.Person.FirstName,
-            #         MiddleName=parish_priest.Person.MiddleName,
-            #         FirstSurname=parish_priest.Person.FirstSurname,
-            #         SecondSurname=parish_priest.Person.SecondSurname,
-            #         BirthDate=parish_priest.Person.BirthDate,
-            #         BirthLocation=LocationDTO(
-            #             IDLocation=parish_priest.Person.BirthLocation.IDLocation,
-            #             Country=parish_priest.Person.BirthLocation.Country,
-            #             State=parish_priest.Person.BirthLocation.State,
-            #             Province=parish_priest.Person.BirthLocation.Province
-            #         ),
-            #         DNI=parish_priest.Person.DNI,
-            #         Gender=parish_priest.Person.Gender,
-            #         Address=AddressDTO(
-            #             IDAddress=parish_priest.Person.Address.IDAddress,
-            #             MainStreet=parish_priest.Person.Address.MainStreet,
-            #             Number=parish_priest.Person.Address.Number,
-            #             SecondStreet=parish_priest.Person.Address.SecondStreet,
-            #             Location=LocationDTO(
-            #                 IDLocation=parish_priest.Person.Address.Location.IDLocation,
-            #                 Country=parish_priest.Person.Address.Location.Country,
-            #                 State=parish_priest.Person.Address.Location.State,
-            #                 Province=parish_priest.Person.Address.Location.Province
-            #             ),
-            #         ),
-            #         PhoneNumber=PhoneNumberDTO(
-            #             IDPhoneNumer=parish_priest.Person.PhoneNumber.IDPhoneNumer,
-            #             PhoneNumber=parish_priest.Person.PhoneNumber.PhoneNumber,
-            #             PhoneNumberType=PhoneNumberTypeDTO(
-            #                 IDPhoneNumberType=parish_priest.Person.PhoneNumber.PhoneNumberType.IDPhoneNumberType,
-            #                 PhoneNumberType=parish_priest.Person.PhoneNumber.PhoneNumberType.PhoneNumberType
-            #             )
-            #         ),
-            #         EmailAddress=parish_priest.Person.EmailAddress,
-            #     )
-            # )
             parish_priest = ParishPriest.from_other_obj(priest_data)
             parish_priest, success, _ = DBManager.get_or_create(self.db, parish_priest)
             
@@ -490,7 +115,7 @@ class SQLAlchemyDAL(IDataAccessLayer):
     def get_parish_priest_by_id(self, priest_id: int) -> Optional[ParishPriestDTO]:
         pass # ID se refiere a Person.IDPerson
 
-    def get_parish_priests_by_parish(self, parish_id: int, skip: int = 0, limit: int = 100) -> List[ParishPriestDTO]:
+    def get_parish_priests_by_parish(self, parish_id: int) -> List[ParishPriestDTO]:
         pass
 
     def update_parish_priest(self, priest_id: int, priest_data: ParishPriestDTO) -> Optional[ParishPriestDTO]:
@@ -507,7 +132,7 @@ class SQLAlchemyDAL(IDataAccessLayer):
     def get_catechist_by_id(self, catechist_id: int) -> Optional[CatechistDTO]:
         pass # ID se refiere a Person.IDPerson
 
-    def get_all_catechists(self, skip: int = 0, limit: int = 100) -> List[CatechistDTO]:
+    def get_all_catechists(self) -> List[CatechistDTO]:
         pass
 
     def update_catechist(self, catechist_id: int, catechist_data: CatechistDTO) -> Optional[CatechistDTO]:
@@ -523,10 +148,10 @@ class SQLAlchemyDAL(IDataAccessLayer):
     def get_catechizing_by_id(self, catechizing_id: int) -> Optional[CatechizingDTO]:
         pass # ID se refiere a Person.IDPerson
 
-    def get_catechizings_by_class(self, class_id: int, skip: int = 0, limit: int = 100) -> List[CatechizingDTO]:
+    def get_catechizings_by_class(self, class_id: int) -> List[CatechizingDTO]:
         pass
 
-    def get_all_catechizings(self, skip: int = 0, limit: int = 100) -> List[CatechizingDTO]:
+    def get_all_catechizings(self) -> List[CatechizingDTO]:
         pass
 
     def update_catechizing(self, catechizing_id: int, catechizing_data: CatechizingDTO) -> Optional[CatechizingDTO]:
@@ -539,21 +164,6 @@ class SQLAlchemyDAL(IDataAccessLayer):
     def get_person_by_dni(self, dni: str) -> Optional[PersonDTO]:
         person_from_db = self.db.query(Person).filter_by(DNI=dni).first()
         return PersonDTO.from_other_obj(person_from_db)
-        # return PersonDTO(
-        #     IDPerson=person_from_db.IDPerson,
-        #     FirstName=person_from_db.FirstName,
-        #     MiddleName=person_from_db.MiddleName,
-        #     FirstSurname=person_from_db.FirstSurname,
-        #     SecondSurname=person_from_db.SecondSurname,
-        #     BirthDate=person_from_db.BirthDate,
-        #     BirthLocation=LocationDTO(
-        #         IDLocation=person_from_db.BirthLocation.IDLocation,
-        #         Country=person_from_db.BirthLocation.Country,
-        #         State=person_from_db.BirthLocation.State,
-        #         Province=person_from_db.BirthLocation.Province
-        #     ),
-        #     DNI=person_from_db.DNI,
-        #     Gender=person.
 
     def get_user_by_username(self, username: str) -> Optional[UserDTO]:
         pass

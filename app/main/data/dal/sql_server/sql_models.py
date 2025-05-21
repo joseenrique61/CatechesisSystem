@@ -291,8 +291,10 @@ class Parish(BaseModel):
     __table_args__ = (
         ForeignKeyConstraint(['IDAddress'], ['LocationInformation.Address.IDAddress'], name='fk_Address_Parish'),
         PrimaryKeyConstraint('IDParish', name='pk_Parish_IDParish'),
+        Index('uk_Parish_Name', 'Name', unique=True),
         {'schema': 'Catechesis'}
     )
+    __should_raise_error_if_duplicate__ = True
 
     IDParish: Mapped[int] = mapped_column(Integer, Identity(start=1, increment=1), primary_key=True)
     IDAddress: Mapped[int] = mapped_column(Integer)
