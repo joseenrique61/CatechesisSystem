@@ -2,6 +2,7 @@ from app.main.data.dal.i_data_access_layer import IDataAccessLayer
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from typing import Optional
+from app.main.data.dal.sql_server.sql_alchemy_adder import DBManager
 from app.main.data.dtos.base_dtos import *
 from app.main.data.dal.sql_server.sql_models import *
 from app.main.data.image_manager import delete_image, upload_image
@@ -184,24 +185,26 @@ class SQLAlchemyDAL(IDataAccessLayer):
         :return: Una tupla con el objeto PersonDTO creado y un booleano indicando si fue creado o no.
         """
         try:
-            location, _ = self._get_or_create_location(person_data.BirthLocation)
-            address, _ = self._get_or_create_address(person_data.Address)
-            phone_number, _ = self._get_or_create_phone_number(person_data.PhoneNumber)
+            # location, _ = self._get_or_create_location(person_data.BirthLocation)
+            # address, _ = self._get_or_create_address(person_data.Address)
+            # phone_number, _ = self._get_or_create_phone_number(person_data.PhoneNumber)
 
-            person = Person(
-                FirstName=person_data.FirstName,
-                MiddleName=person_data.MiddleName,
-                FirstSurname=person_data.FirstSurname,
-                SecondSurname=person_data.SecondSurname,
-                BirthDate=person_data.BirthDate,
-                BirthLocation=location,
-                DNI=person_data.DNI,
-                Gender=person_data.Gender,
-                Address=address,
-                PhoneNumber=phone_number,
-                EmailAddress=person_data.EmailAddress,
-            )
-            person, success, _ = self._get_or_create(person, [['FirstName', 'MiddleName', 'FirstSurname', 'SecondSurname'], ['DNI']])
+            # person = Person(
+            #     FirstName=person_data.FirstName,
+            #     MiddleName=person_data.MiddleName,
+            #     FirstSurname=person_data.FirstSurname,
+            #     SecondSurname=person_data.SecondSurname,
+            #     BirthDate=person_data.BirthDate,
+            #     BirthLocation=location,
+            #     DNI=person_data.DNI,
+            #     Gender=person_data.Gender,
+            #     Address=address,
+            #     PhoneNumber=phone_number,
+            #     EmailAddress=person_data.EmailAddress,
+            # )
+            person = Person.from_other_obj(person_data, depth=-1, ignore_lists=False)
+            # person, success, _ = self._get_or_create(person, [['FirstName', 'MiddleName', 'FirstSurname', 'SecondSurname'], ['DNI']])
+            person, success, _ = DBManager.get_or_create(self.db, person)
             if not success:
                 raise Exception("La persona ya existe y no se puede crear una nueva con los mismos datos.")
             return person, success
@@ -365,7 +368,7 @@ class SQLAlchemyDAL(IDataAccessLayer):
                 Classroom=classroom
             )
             parish, success, _ = self._get_or_create(parish, [['Name']])
-            parish_dto = ParishDTO.from_db_obj(parish)
+            parish_dto = ParishDTO.from_other_obj(parish)
             db.session.commit()
             if not success:
                 image_deleted = delete_image(logo_path)
@@ -377,7 +380,7 @@ class SQLAlchemyDAL(IDataAccessLayer):
             raise
 
     def get_parish_by_id(self, parish_id: int) -> Optional[ParishDTO]:
-        pass
+        return ParishDTO.from_other_obj(self.db.query(Parish).filter_by(IDParish=parish_id).first())
 
     def get_all_parishes(self, skip: int = 0, limit: int = 100) -> List[ParishDTO]:
         pass
@@ -397,19 +400,19 @@ class SQLAlchemyDAL(IDataAccessLayer):
         :return: Una tupla con el objeto ParishPriestDTO creado y un booleano indicando si fue creado o no.
         """
         try:
-            person, _ = self._get_or_create_person(priest_data.Person)
+            # person, _ = self._get_or_create_person(priest_data.Person)
 
-            priest_data.User.Role = RoleDTO(Role="ParishPriest")
-            user, user_created = self._get_or_create_user(priest_data.User)
-            if not user_created:
-                raise IntegrityError("El usuario ya existe y no se puede crear un nuevo sacerdote con el mismo usuario.")
+            # priest_data.User.Role = RoleDTO(Role="ParishPriest")
+            # user, user_created = self._get_or_create_user(priest_data.User)
+            # if not user_created:
+            #     raise IntegrityError("El usuario ya existe y no se puede crear un nuevo sacerdote con el mismo usuario.")
 
-            parish_priest = ParishPriest(
-                Person=person,
-                User=user,
-                IDParish=priest_data.IDParish,
-            )
-            parish_priest, success, _ = self._get_or_create(parish_priest, [['IDParish', 'IDUser']])
+            # parish_priest = ParishPriest(
+            #     Person=person,
+            #     User=user,
+            #     IDParish=priest_data.IDParish,
+            # )
+            # parish_priest, success, _ = self._get_or_create(parish_priest, [['IDParish', 'IDUser']])
             # parish_priest_dto = ParishPriestDTO(
             #     IDParishPriest=parish_priest.IDParishPriest,
             #     User=UserDTO(
@@ -475,7 +478,10 @@ class SQLAlchemyDAL(IDataAccessLayer):
             #         EmailAddress=parish_priest.Person.EmailAddress,
             #     )
             # )
-            parish_priest_dto = ParishPriestDTO.from_db_obj(parish_priest)
+            parish_priest = ParishPriest.from_other_obj(priest_data)
+            parish_priest, success, _ = DBManager.get_or_create(self.db, parish_priest)
+            
+            parish_priest_dto = ParishPriestDTO.from_other_obj(parish_priest)
             self.db.commit()
             return parish_priest_dto, success
         except:
@@ -532,7 +538,7 @@ class SQLAlchemyDAL(IDataAccessLayer):
     # --- Métodos auxiliares (podrían ser necesarios) ---
     def get_person_by_dni(self, dni: str) -> Optional[PersonDTO]:
         person_from_db = self.db.query(Person).filter_by(DNI=dni).first()
-        return PersonDTO.from_db_obj(person_from_db)
+        return PersonDTO.from_other_obj(person_from_db)
         # return PersonDTO(
         #     IDPerson=person_from_db.IDPerson,
         #     FirstName=person_from_db.FirstName,

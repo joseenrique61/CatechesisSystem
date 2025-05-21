@@ -2,6 +2,7 @@ from __future__ import annotations # Permite usar nombres de clase como tipos an
 import typing
 import sys
 import inspect
+from sqlalchemy.orm.base import Mapped
 
 from app.main.data.dtos.base_dtos import *
 
@@ -65,7 +66,7 @@ class Mappable:
         return type_hint
 
     @classmethod
-    def _from_db_obj(cls: typing.Type[_T], db_obj: typing.Any, custom_var_path: str = "", current_depth: int = 0, debug = True, depth: int = -1, ignore_optional: bool = False, ignore_lists: bool = False, include: list[str] = [], exclude: list[str] = [], current_param_name: str = "") -> _T:
+    def _from_other_obj(cls: typing.Type[_T], db_obj: typing.Any, custom_var_path: str = "", current_depth: int = 0, debug = True, depth: int = -1, ignore_optional: bool = False, ignore_lists: bool = False, include: list[str] = [], exclude: list[str] = [], current_param_name: str = "") -> _T:
         if db_obj is None:
             raise ValueError(f"No se puede crear {cls.__name__} desde un objeto None.")
 
@@ -109,6 +110,9 @@ class Mappable:
                 except Exception:
                     if debug: print(f"[DEBUG]   No se pudo evaluar la cadena de tipo '{raw_type}' para '{attr_name}'. Usando ForwardRef.")
                     resolved_type = typing.ForwardRef(raw_type) # Tratarla como ForwardRef
+
+            if get_origin(resolved_type) is Mapped:
+                resolved_type = get_args(resolved_type)[0]
 
             if isinstance(resolved_type, typing.ForwardRef):
                 if debug: print(f"[DEBUG]   Atributo '{attr_name}' tiene ForwardRef: {resolved_type.__forward_arg__}. Intentando resolver...")
@@ -199,7 +203,7 @@ class Mappable:
                         if depth != -1 and current_depth == depth and temp_current_attr_name not in include and is_optional_target:
                             if debug: print(f"[DEBUG]   '{attr_name}' (tipo {actual_loc_type_for_conversion.__name__}) es subclase de Mappable. Depth máximo alcanzado")
                             continue
-                        kwargs_for_constructor[attr_name] = [list_item_type_actual._from_db_obj(item, debug=debug, custom_var_path=custom_var_path, current_depth=current_depth + 1, depth=depth, ignore_optional=ignore_optional, ignore_lists=ignore_lists, include=include, exclude=exclude, current_param_name=temp_current_attr_name) for item in db_attr_value]
+                        kwargs_for_constructor[attr_name] = [list_item_type_actual._from_other_obj(item, debug=debug, custom_var_path=custom_var_path, current_depth=current_depth + 1, depth=depth, ignore_optional=ignore_optional, ignore_lists=ignore_lists, include=include, exclude=exclude, current_param_name=temp_current_attr_name) for item in db_attr_value]
                     else:
                         kwargs_for_constructor[attr_name] = [] if not is_optional_target else None
                     if debug: print(f"[DEBUG]     Mapeada lista de Mappables para '{attr_name}'.")
@@ -213,7 +217,7 @@ class Mappable:
                     if debug: print(f"[DEBUG]   '{attr_name}' (tipo {actual_loc_type_for_conversion.__name__}) es subclase de Mappable. LlamDepth máximo alcanzado")
                     continue
                 if debug: print(f"[DEBUG]   '{attr_name}' (tipo {actual_loc_type_for_conversion.__name__}) es subclase de Mappable. Llamando recursivamente a from_db_obj.")
-                kwargs_for_constructor[attr_name] = actual_loc_type_for_conversion._from_db_obj(db_attr_value, debug=debug, custom_var_path=custom_var_path, current_depth=current_depth + 1, depth=depth, ignore_optional=ignore_optional, ignore_lists=ignore_lists, include=include, exclude=exclude, current_param_name=temp_current_attr_name)
+                kwargs_for_constructor[attr_name] = actual_loc_type_for_conversion._from_other_obj(db_attr_value, debug=debug, custom_var_path=custom_var_path, current_depth=current_depth + 1, depth=depth, ignore_optional=ignore_optional, ignore_lists=ignore_lists, include=include, exclude=exclude, current_param_name=temp_current_attr_name)
             
             # elif hasattr(actual_loc_type_for_conversion, '_from_db_obj') and callable(getattr(actual_loc_type_for_conversion, 'from_db_obj')):
             #     if debug: print(f"[DEBUG]   '{attr_name}' (tipo {getattr(actual_loc_type_for_conversion, '__name__', repr(actual_loc_type_for_conversion))}) tiene from_db_obj. Llamando recursivamente.")
@@ -246,10 +250,10 @@ class Mappable:
         return instance
 
     @classmethod
-    def from_db_obj(cls: typing.Type[_T], db_obj: typing.Any, depth: int = 1, custom_var_path: str = "", ignore_optional: bool = False, ignore_lists: bool = True, include: list[str] = [], exclude: list[str] = []) -> _T:
+    def from_other_obj(cls: typing.Type[_T], db_obj: typing.Any, depth: int = 1, custom_var_path: str = "", ignore_optional: bool = False, ignore_lists: bool = True, include: list[str] = [], exclude: list[str] = []) -> _T:
         """
         Crea una instancia de 'cls' (una clase *DTO) a partir de 'db_obj', 
         mapeando atributos con el mismo nombre.
         Maneja recursivamente los atributos que también son Mappable.
         """
-        return cls._from_db_obj(db_obj, custom_var_path=custom_var_path, current_depth=0, depth=depth, ignore_optional=ignore_optional, ignore_lists=ignore_lists, include=include, exclude=exclude, current_param_name="")
+        return cls._from_other_obj(db_obj, custom_var_path=custom_var_path, current_depth=0, depth=depth, ignore_optional=ignore_optional, ignore_lists=ignore_lists, include=include, exclude=exclude, current_param_name="")

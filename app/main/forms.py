@@ -15,14 +15,16 @@ class AddressForm(Form):
     SecondStreet = StringField('Calle secundaria', [validators.Length(min=1, max=100)])
     Location = FormField(LocationForm, label='Ubicación')
 
-class PhoneNumberForm(Form):
-    PhoneNumber = StringField('Teléfono', [validators.Length(min=1, max=15)])
-    IDPhoneNumberType = SelectField('Tipo de teléfono')
+class PhoneNumberTypeForm(Form):
+    PhoneNumberType = SelectField('Tipo de teléfono')
 
     def __init__(self, *args, **kwargs):
-        super(PhoneNumberForm, self).__init__(*args, **kwargs)
-        self.IDPhoneNumberType.choices = [(phone_type.IDPhoneNumberType, phone_type.PhoneNumberType) for phone_type in dal.get_all_phone_number_types()]
+        super(PhoneNumberTypeForm, self).__init__(*args, **kwargs)
+        self.PhoneNumberType.choices = [phone_type.PhoneNumberType for phone_type in dal.get_all_phone_number_types()]
     
+class PhoneNumberForm(Form):
+    PhoneNumber = StringField('Teléfono', [validators.Length(min=1, max=15)])
+    PhoneNumberType = FormField(PhoneNumberTypeForm, label="Tipo de teléfono")
 
 class PersonForm(Form):
     FirstName = StringField('Primer nombre', [validators.Length(min=1, max=100)])

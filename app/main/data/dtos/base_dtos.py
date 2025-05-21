@@ -8,15 +8,9 @@ from werkzeug.datastructures import FileStorage
 
 # --- Base DTOs
 class BaseDTO(BaseModel, Mappable):
-    error_on_duplicate: bool = True
-    unique_cols: list[list[str]] = [[]]
-    
     class Config:
         from_attributes = True # Permite crear el DTO desde atributos de objeto (SQLAlchemy models)
         arbitrary_types_allowed = True
-
-    def get_or_create(self):
-        pass
 
 class TextBookDTO(BaseDTO):
     IDTextBook: Optional[int] = None

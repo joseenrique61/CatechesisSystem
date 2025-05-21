@@ -6,8 +6,13 @@ import datetime
 from app import db
 from werkzeug.security import check_password_hash, generate_password_hash
 
+from app.main.data.mapper import Mappable
 
-class TextBook(db.Model):
+class BaseModel(db.Model, Mappable):
+    __abstract__ = True
+    __should_raise_error_if_duplicate__ = False
+
+class TextBook(BaseModel):
     __tablename__ = 'TextBook'
     __table_args__ = (
         PrimaryKeyConstraint('IDTextBook', name='pk_Book_IDBook'),
@@ -23,7 +28,7 @@ class TextBook(db.Model):
     Level: Mapped[List['Level']] = relationship('Level', back_populates='TextBook')
 
 
-class BaptismalBookVolume(db.Model):
+class BaptismalBookVolume(BaseModel):
     __tablename__ = 'BaptismalBookVolume'
     __table_args__ = (
         PrimaryKeyConstraint('IDBaptismalBookVolume', name='pk_BaptismalBookVolume_IDBaptismalBookVolume'),
@@ -37,7 +42,7 @@ class BaptismalBookVolume(db.Model):
     BaptismalBookPage: Mapped[List['BaptismalBookPage']] = relationship('BaptismalBookPage', back_populates='BaptismalBookVolume')
 
 
-class ClassPeriod(db.Model):
+class ClassPeriod(BaseModel):
     __tablename__ = 'ClassPeriod'
     __table_args__ = (
         PrimaryKeyConstraint('IDClassPeriod', name='pk_ClassPeriod_IDClassPeriod'),
@@ -53,7 +58,7 @@ class ClassPeriod(db.Model):
     Class: Mapped[List['Class']] = relationship('Class', back_populates='ClassPeriod')
 
 
-class DayOfTheWeek(db.Model):
+class DayOfTheWeek(BaseModel):
     __tablename__ = 'DayOfTheWeek'
     __table_args__ = (
         PrimaryKeyConstraint('IDDayOfTheWeek', name='pk_DayOfTheWeek_IDDayOfTheWeek'),
@@ -67,7 +72,7 @@ class DayOfTheWeek(db.Model):
     Schedule: Mapped[List['Schedule']] = relationship('Schedule', back_populates='DayOfTheWeek')
 
 
-class Location(db.Model):
+class Location(BaseModel):
     __tablename__ = 'Location'
     __table_args__ = (
         PrimaryKeyConstraint('IDLocation', name='pk_Location_IDLocation'),
@@ -88,7 +93,7 @@ class Location(db.Model):
         return Location.query.filter_by(Country='Ecuador', Province='Pichincha', State='Quito').first()
 
 
-class Allergy(db.Model):
+class Allergy(BaseModel):
     __tablename__ = 'Allergy'
     __table_args__ = (
         PrimaryKeyConstraint('IDAllergy', name='pk_Allergy_IDAllergy'),
@@ -102,7 +107,7 @@ class Allergy(db.Model):
     HealthInformation: Mapped[List['HealthInformation']] = relationship('HealthInformation', secondary='personalinformation.AllergyHealthInformation', back_populates='Allergy')
 
 
-class BloodType(db.Model):
+class BloodType(BaseModel):
     __tablename__ = 'BloodType'
     __table_args__ = (
         PrimaryKeyConstraint('IDBloodType', name='pk_BloodType_IDBloodType'),
@@ -116,7 +121,7 @@ class BloodType(db.Model):
     HealthInformation: Mapped[List['HealthInformation']] = relationship('HealthInformation', back_populates='BloodType')
 
 
-class PhoneNumberType(db.Model):
+class PhoneNumberType(BaseModel):
     __tablename__ = 'PhoneNumberType'
     __table_args__ = (
         PrimaryKeyConstraint('IDPhoneNumberType', name='pk_PhoneNumberType_IDPhoneNumberType'),
@@ -129,7 +134,7 @@ class PhoneNumberType(db.Model):
 
     PhoneNumber: Mapped[List['PhoneNumber']] = relationship('PhoneNumber', back_populates='PhoneNumberType')
 
-class Role(db.Model):
+class Role(BaseModel):
     __tablename__ = 'Role'
     __table_args__ = (
         PrimaryKeyConstraint('IDRole', name='pk_Role_IDRole'),
@@ -142,7 +147,7 @@ class Role(db.Model):
     
     User: Mapped[List['User']] = relationship('User', back_populates='Role')
 
-class User(db.Model):
+class User(BaseModel):
     __tablename__ = 'User'
     __table_args__ = (
         ForeignKeyConstraint(['IDRole'], ['User.Role.IDRole'], name='fk_Role_User'),
@@ -150,6 +155,7 @@ class User(db.Model):
         Index('uk_User_Username', 'Username', unique=True),
         {'schema': 'User'}
     )
+    __should_raise_error_if_duplicate__ = True
 
     IDUser: Mapped[int] = mapped_column(Integer, Identity(start=1, increment=1), primary_key=True)
     Username: Mapped[str] = mapped_column(Unicode(100, 'Modern_Spanish_CI_AS'))
@@ -168,7 +174,7 @@ class User(db.Model):
         self.Password = generate_password_hash(password)
 
 
-class Level(db.Model):
+class Level(BaseModel):
     __tablename__ = 'Level'
     __table_args__ = (
         ForeignKeyConstraint(['IDPreviousLevel'], ['Catechesis.Level.IDLevel'], name='fk_Level_PreviousLevel'),
@@ -194,7 +200,7 @@ class Level(db.Model):
     ParticularClass: Mapped[List['ParticularClass']] = relationship('ParticularClass', back_populates='Level')
 
 
-class BaptismalBookPage(db.Model):
+class BaptismalBookPage(BaseModel):
     __tablename__ = 'BaptismalBookPage'
     __table_args__ = (
         ForeignKeyConstraint(['IDBaptismalBookVolume'], ['Certificate.BaptismalBookVolume.IDBaptismalBookVolume'], name='fk_BaptismalBookVolume_BaptismalBookPage'),
@@ -211,7 +217,7 @@ class BaptismalBookPage(db.Model):
     BaptismalCertificate: Mapped[List['BaptismalCertificate']] = relationship('BaptismalCertificate', back_populates='BaptismalBookPage')
 
 
-class Schedule(db.Model):
+class Schedule(BaseModel):
     __tablename__ = 'Schedule'
     __table_args__ = (
         ForeignKeyConstraint(['IDDayOfTheWeek'], ['ClassInformation.DayOfTheWeek.IDDayOfTheWeek'], name='fk_DayOfTheWeek_Schedule'),
@@ -228,7 +234,7 @@ class Schedule(db.Model):
     Class: Mapped[List['Class']] = relationship('Class', secondary='classinformation.ClassSchedule', back_populates='Schedule')
 
 
-class Address(db.Model):
+class Address(BaseModel):
     __tablename__ = 'Address'
     __table_args__ = (
         ForeignKeyConstraint(['IDLocation'], ['LocationInformation.Location.IDLocation'], name='fk_Location_Address'),
@@ -250,7 +256,7 @@ class Address(db.Model):
     School: Mapped[List['School']] = relationship('School', back_populates='Address')
 
 
-class PhoneNumber(db.Model):
+class PhoneNumber(BaseModel):
     __tablename__ = 'PhoneNumber'
     __table_args__ = (
         ForeignKeyConstraint(['IDPhoneNumberType'], ['PersonalInformation.PhoneNumberType.IDPhoneNumberType'], name='fk_PhoneNumberType_PhoneNumber'),
@@ -267,7 +273,7 @@ class PhoneNumber(db.Model):
     Person: Mapped[List['Person']] = relationship('Person', back_populates='PhoneNumber')
 
 
-class Administrator(db.Model):
+class Administrator(BaseModel):
     __tablename__ = 'Administrator'
     __table_args__ = (
         ForeignKeyConstraint(['IDUser'], ['User.User.IDUser'], name='fk_User_Administrator'),
@@ -280,7 +286,7 @@ class Administrator(db.Model):
     User: Mapped['User'] = relationship('User', back_populates='Administrator')
 
 
-class Parish(db.Model):
+class Parish(BaseModel):
     __tablename__ = 'Parish'
     __table_args__ = (
         ForeignKeyConstraint(['IDAddress'], ['LocationInformation.Address.IDAddress'], name='fk_Address_Parish'),
@@ -298,7 +304,7 @@ class Parish(db.Model):
     ParishPriest: Mapped['ParishPriest'] = relationship('ParishPriest', back_populates='Parish')
 
 
-class Sacrament(db.Model):
+class Sacrament(BaseModel):
     __tablename__ = 'Sacrament'
     __table_args__ = (
         ForeignKeyConstraint(['IDLevel'], ['Catechesis.Level.IDLevel'], name='fk_Level_Sacrament'),
@@ -316,7 +322,7 @@ class Sacrament(db.Model):
     Catechizing: Mapped[List['Catechizing']] = relationship('Catechizing', secondary='catechesis.CatechizingSacrament', back_populates='Sacrament')
 
 
-class HealthInformation(db.Model):
+class HealthInformation(BaseModel):
     __tablename__ = 'HealthInformation'
     __table_args__ = (
         ForeignKeyConstraint(['IDBloodType'], ['PersonalInformation.BloodType.IDBloodType'], name='fk_BloodType_HealthInformation'),
@@ -336,7 +342,7 @@ class HealthInformation(db.Model):
     BloodType: Mapped['BloodType'] = relationship('BloodType', back_populates='HealthInformation')
     EmergencyContact: Mapped['Person'] = relationship('Person', back_populates='HealthInformation', foreign_keys=[IDEmergencyContact])
 
-class Person(db.Model):
+class Person(BaseModel):
     __tablename__ = 'Person'
     __table_args__ = (
         ForeignKeyConstraint(['IDAddress'], ['LocationInformation.Address.IDAddress'], name='fk_Address_Person'),
@@ -353,6 +359,7 @@ class Person(db.Model):
         Index('uk_Person_FirstName_MiddleName_FirstSurname_SecondSurname', 'FirstName', 'MiddleName', 'FirstSurname', 'SecondSurname', unique=True),
         {'schema': 'Person'}
     )
+    __should_raise_error_if_duplicate__ = True
 
     IDPerson: Mapped[int] = mapped_column(Integer, Identity(start=1, increment=1), primary_key=True)
     FirstName: Mapped[str] = mapped_column(Unicode(100, 'Modern_Spanish_CI_AS'))
@@ -379,7 +386,7 @@ class Person(db.Model):
     Godparent: Mapped['Godparent'] = relationship('Godparent', back_populates='Person')
 
 
-class School(db.Model):
+class School(BaseModel):
     __tablename__ = 'School'
     __table_args__ = (
         ForeignKeyConstraint(['IDAddress'], ['LocationInformation.Address.IDAddress'], name='fk_Address_School'),
@@ -395,7 +402,7 @@ class School(db.Model):
     SchoolClassYear: Mapped[List['SchoolClassYear']] = relationship('SchoolClassYear', back_populates='School')
 
 
-class Classroom(db.Model):
+class Classroom(BaseModel):
     __tablename__ = 'Classroom'
     __table_args__ = (
         ForeignKeyConstraint(['IDParish'], ['Catechesis.Parish.IDParish'], name='fk_Parish_Classroom'),
@@ -411,7 +418,7 @@ class Classroom(db.Model):
     Class: Mapped[List['Class']] = relationship('Class', secondary='classinformation.ClassClassroom', back_populates='Classroom')
 
 
-class Catechist(db.Model):
+class Catechist(BaseModel):
     __tablename__ = 'Catechist'
     __table_args__ = (
         ForeignKeyConstraint(['IDCatechist'], ['Person.Person.IDPerson'], name='fk_Person_Catechist'),
@@ -428,7 +435,7 @@ class Catechist(db.Model):
     Class: Mapped[List['Class']] = relationship('Class', back_populates='Catechist')
 
 
-class Godparent(db.Model):
+class Godparent(BaseModel):
     __tablename__ = 'Godparent'
     __table_args__ = (
         ForeignKeyConstraint(['IDGodparent'], ['Person.Person.IDPerson'], name='fk_Person_GodParent'),
@@ -442,7 +449,7 @@ class Godparent(db.Model):
     Catechizing: Mapped[List['Catechizing']] = relationship('Catechizing', secondary='person.CatechizingGodparent', back_populates='Godparent')
 
 
-class Parent(db.Model):
+class Parent(BaseModel):
     __tablename__ = 'Parent'
     __table_args__ = (
         ForeignKeyConstraint(['IDParent'], ['Person.Person.IDPerson'], name='fk_Person_Parent'),
@@ -457,7 +464,7 @@ class Parent(db.Model):
     Catechizing: Mapped[List['Catechizing']] = relationship('Catechizing', secondary='person.CatechizingParent', back_populates='Parent')
 
 
-class ParishPriest(db.Model):
+class ParishPriest(BaseModel):
     __tablename__ = 'ParishPriest'
     __table_args__ = (
         ForeignKeyConstraint(['IDParish'], ['Catechesis.Parish.IDParish'], name='fk_Parish_ParishPriest'),
@@ -478,7 +485,7 @@ class ParishPriest(db.Model):
     BaptismalCertificate: Mapped[List['BaptismalCertificate']] = relationship('BaptismalCertificate', back_populates='ParishPriest')
 
 
-class SupportPerson(db.Model):
+class SupportPerson(BaseModel):
     __tablename__ = 'SupportPerson'
     __table_args__ = (
         ForeignKeyConstraint(['IDSupportPerson'], ['Person.Person.IDPerson'], name='fk_Person_SupportPerson'),
@@ -492,7 +499,7 @@ class SupportPerson(db.Model):
     Class: Mapped[List['Class']] = relationship('Class', back_populates='SupportPerson')
 
 
-class SchoolClassYear(db.Model):
+class SchoolClassYear(BaseModel):
     __tablename__ = 'SchoolClassYear'
     __table_args__ = (
         ForeignKeyConstraint(['IDSchool'], ['SchoolInformation.School.IDSchool'], name='fk_School_SchoolClassYear'),
@@ -508,7 +515,7 @@ class SchoolClassYear(db.Model):
     Catechizing: Mapped[List['Catechizing']] = relationship('Catechizing', back_populates='SchoolClassYear')
 
 
-class MainParish(db.Model):
+class MainParish(BaseModel):
     __tablename__ = 'MainParish'
     __table_args__ = (
         ForeignKeyConstraint(['IDMainParish'], ['Catechesis.Parish.IDParish'], name='fk_Parish_MainParish'),
@@ -519,7 +526,7 @@ class MainParish(db.Model):
     IDMainParish: Mapped[int] = mapped_column(Integer, primary_key=True)
 
 
-class Class(db.Model):
+class Class(BaseModel):
     __tablename__ = 'Class'
     __table_args__ = (
         ForeignKeyConstraint(['IDCatechist'], ['Person.Catechist.IDCatechist'], name='fk_Catechist_Class'),
@@ -549,7 +556,7 @@ class Class(db.Model):
     AttendedClass: Mapped[List['AttendedClass']] = relationship('AttendedClass', back_populates='Class')
 
 
-class ClassAuthorization(db.Model):
+class ClassAuthorization(BaseModel):
     __tablename__ = 'ClassAuthorization'
     __table_args__ = (
         ForeignKeyConstraint(['IDParishPriest'], ['Person.ParishPriest.IDParishPriest'], name='fk_ParishPriest_ClassAuthorization'),
@@ -565,7 +572,7 @@ class ClassAuthorization(db.Model):
     ParticularClass: Mapped['ParticularClass'] = relationship('ParticularClass', back_populates='ClassAuthorization')
 
 
-class Catechizing(db.Model):
+class Catechizing(BaseModel):
     __tablename__ = 'Catechizing'
     __table_args__ = (
         ForeignKeyConstraint(['IDCatechizing'], ['Person.Person.IDPerson'], name='fk_Person_Catechizing'),
@@ -632,7 +639,7 @@ t_CatechizingSacrament = Table(
 )
 
 
-class DataSheet(db.Model):
+class DataSheet(BaseModel):
     __tablename__ = 'DataSheet'
     __table_args__ = (
         ForeignKeyConstraint(['IDPerson'], ['Person.Catechizing.IDCatechizing'], name='fk_Catechizing_DataSheet'),
@@ -646,7 +653,7 @@ class DataSheet(db.Model):
     DataSheetInformation: Mapped[str] = mapped_column(Unicode(500, 'Modern_Spanish_CI_AS'))
 
 
-class BaptismalCertificate(db.Model):
+class BaptismalCertificate(BaseModel):
     __tablename__ = 'BaptismalCertificate'
     __table_args__ = (
         ForeignKeyConstraint(['IDBaptismalBookPage'], ['Certificate.BaptismalBookPage.IDBaptismalBookPage'], name='fk_BaptismalBookPage_BaptismalCertificate'),
@@ -666,7 +673,7 @@ class BaptismalCertificate(db.Model):
     ParishPriest: Mapped['ParishPriest'] = relationship('ParishPriest', back_populates='BaptismalCertificate')
 
 
-class LevelCertificate(db.Model):
+class LevelCertificate(BaseModel):
     __tablename__ = 'LevelCertificate'
     __table_args__ = (
         ForeignKeyConstraint(['IDCatechizing'], ['Person.Catechizing.IDCatechizing'], name='fk_Catechizing_LevelCertificate'),
@@ -684,7 +691,7 @@ class LevelCertificate(db.Model):
     Class: Mapped['Class'] = relationship('Class', back_populates='LevelCertificate')
 
 
-class AttendedClass(db.Model):
+class AttendedClass(BaseModel):
     __tablename__ = 'AttendedClass'
     __table_args__ = (
         ForeignKeyConstraint(['IDCatechizing'], ['Person.Catechizing.IDCatechizing'], name='fk_Person_AttendedClass'),
@@ -701,7 +708,7 @@ class AttendedClass(db.Model):
     Class: Mapped['Class'] = relationship('Class', back_populates='AttendedClass')
 
 
-class ParticularClass(db.Model):
+class ParticularClass(BaseModel):
     __tablename__ = 'ParticularClass'
     __table_args__ = (
         ForeignKeyConstraint(['IDCatechizing'], ['Person.Catechizing.IDCatechizing'], name='fk_Catechizing_ParticularClass'),
