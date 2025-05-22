@@ -70,6 +70,9 @@ class Mappable:
         if db_obj is None:
             raise ValueError(f"No se puede crear {cls.__name__} desde un objeto None.")
 
+        if f"{type(db_obj).__name__}." in current_param_name:
+            return None
+
         kwargs_for_constructor = {}
         
         # Contexto para get_type_hints
@@ -125,7 +128,7 @@ class Mappable:
         if debug: print(f"[DEBUG] Anotaciones para {cls.__name__} (resueltas): {loc_type_hints}")
 
         for attr_name, loc_attr_type in loc_type_hints.items():
-            temp_current_attr_name = f"{current_param_name}.{attr_name}"
+            temp_current_attr_name = f"{current_param_name}{'.' if current_param_name != '' else ''}{attr_name}"
             if temp_current_attr_name in exclude:
                 continue
             
@@ -203,7 +206,13 @@ class Mappable:
                         if depth != -1 and current_depth == depth and temp_current_attr_name not in include and is_optional_target:
                             if debug: print(f"[DEBUG]   '{attr_name}' (tipo {actual_loc_type_for_conversion.__name__}) es subclase de Mappable. Depth máximo alcanzado")
                             continue
-                        kwargs_for_constructor[attr_name] = [list_item_type_actual._from_other_obj(item, debug=debug, custom_var_path=custom_var_path, current_depth=current_depth + 1, depth=depth, ignore_optional=ignore_optional, ignore_lists=ignore_lists, include=include, exclude=exclude, current_param_name=temp_current_attr_name) for item in db_attr_value]
+                        kwargs_for_constructor[attr_name] = []
+                        for item in db_attr_value:
+                            temp_item = list_item_type_actual._from_other_obj(item, debug=debug, custom_var_path=custom_var_path, current_depth=current_depth + 1, depth=depth, ignore_optional=ignore_optional, ignore_lists=ignore_lists, include=include, exclude=exclude, current_param_name=temp_current_attr_name)
+                            if temp_item is None:
+                                continue
+                            kwargs_for_constructor[attr_name].append(temp_item)
+                        # kwargs_for_constructor[attr_name] = [list_item_type_actual._from_other_obj(item, debug=debug, custom_var_path=custom_var_path, current_depth=current_depth + 1, depth=depth, ignore_optional=ignore_optional, ignore_lists=ignore_lists, include=include, exclude=exclude, current_param_name=temp_current_attr_name) for item in db_attr_value]
                     else:
                         kwargs_for_constructor[attr_name] = [] if not is_optional_target else None
                     if debug: print(f"[DEBUG]     Mapeada lista de Mappables para '{attr_name}'.")
@@ -250,7 +259,7 @@ class Mappable:
         return instance
 
     @classmethod
-    def from_other_obj(cls: typing.Type[_T], db_obj: typing.Any, depth: int = 1, custom_var_path: str = "", ignore_optional: bool = False, ignore_lists: bool = True, include: list[str] = [], exclude: list[str] = []) -> _T:
+    def from_other_obj(cls: typing.Type[_T], db_obj: typing.Any, depth: int = 1, custom_var_path: str = "", ignore_optional: bool = False, ignore_lists: bool = False, include: list[str] = [], exclude: list[str] = []) -> _T:
         """
         Crea una instancia de 'cls' (una clase *DTO) a partir de 'db_obj', 
         mapeando atributos con el mismo nombre.

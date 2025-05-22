@@ -136,7 +136,9 @@ class DBManager:
         session: Session,
         model_instance: SQLAlchemyModel,
         is_model_func_override: Optional[Callable[[Any], bool]] = None,
-        processed_objects: Optional[set[int]] = None
+        checked_objects: Optional[set[int]] = None,
+        separated_objects: Optional[dict[int, list[SQLAlchemyModel]]] = None, # 
+        current_object: str = ""
     ) -> tuple[SQLAlchemyModel, bool, Optional[TypingList[str]]]:
         if model_instance is None:
             raise ValueError("model_instance no puede ser None")
@@ -145,51 +147,69 @@ class DBManager:
         
         _is_model_func_to_use = is_model_func_override if is_model_func_override else default_is_sqlalchemy_model
 
-        if processed_objects is None:
-            processed_objects = set()
+        if checked_objects is None:
+            checked_objects = set()
+        if separated_objects is None:
+            separated_objects = dict()
 
         instance_id = id(model_instance)
         # ... (misma lógica de processed_objects y comprobación de estado de sesión) ...
-        current_instance_session_state = object_session(model_instance)
-        if instance_id in processed_objects:
+        # current_instance_session_state = object_session(model_instance)
+        if instance_id in checked_objects:
             # if current_instance_session_state == session and not session.is_modified(model_instance, include_collections=False) and model_instance not in session.new and model_instance not in session.deleted:
             return None, False, None 
             # else: Continuar para procesar si no está limpio y persistente
 
-        processed_objects.add(instance_id)
+        checked_objects.add(instance_id)
         
         # 1. Procesar relaciones anidadas
         if hasattr(model_instance, '__mapper__'):
             for rel_prop in model_instance.__mapper__.relationships:
                 attr_name = rel_prop.key
+                temp_current_attr_name = f"{current_object}{'.' if current_object != '' else ''}{attr_name}"
+                
+                is_one_to_many = False
+                
                 try:
                     attr_value = getattr(model_instance, attr_name)
                 except AttributeError: continue
 
-                if attr_value is None: continue
+                if attr_value is None:
+                    continue
+                
+                if not hasattr(model_instance, f"ID{attr_name}"):
+                    is_one_to_many = False
+                elif (id_attr := getattr(model_instance, f"ID{attr_name}", None)) is not None:
+                    is_one_to_many = True
+                    id_condition = {f"ID{attr_name}": id_attr}
+                    attr_value = session.query(model_class).filter_by(**id_condition).one_or_none()
+                    if attr_value is None:
+                        continue
+                    setattr(model_instance, attr_name, attr_value)
+                else:
+                    is_one_to_many = True
 
                 if rel_prop.uselist: # Colección
                     new_list_items = []
-                    list_content_changed_or_item_rebound = False
                     current_items_iterable = list(attr_value) if attr_value is not None else []
 
                     for item_in_list in current_items_iterable:
                         if _is_model_func_to_use(item_in_list):
                             item_session = object_session(item_in_list)
-                            if item_session is not None and item_session != session:
-                                make_transient(item_in_list)
+                            # if item_session is not None and item_session != session:
+                            #     make_transient(item_in_list)
                             
                             # Llamada recursiva estática
                             persisted_item, _, _ = DBManager.get_or_create(
                                 session, # Pasar la sesión
                                 item_in_list,
                                 is_model_func_override, # Pasar el override
-                                processed_objects
+                                checked_objects,
+                                separated_objects = separated_objects,
+                                current_object=temp_current_attr_name
                             )
                             if persisted_item is not None and object_session(model_instance) is None:
                                 new_list_items.append(persisted_item)
-                            if item_in_list is not persisted_item:
-                                list_content_changed_or_item_rebound = True
                         else:
                             new_list_items.append(item_in_list)
                     
@@ -198,17 +218,28 @@ class DBManager:
                 else: # Relación escalar
                     if _is_model_func_to_use(attr_value):
                         scalar_value_session = object_session(attr_value)
-                        if scalar_value_session is not None and scalar_value_session != session:
-                            make_transient(attr_value)
+                        # if scalar_value_session is not None and scalar_value_session != session:
+                        #     make_transient(attr_value)
                         
+                        if is_one_to_many and (id_attr_value := id(attr_value)) in checked_objects and not scalar_value_session:
+                            if separated_objects.get(id_attr_value) is None:
+                                separated_objects[id_attr_value] = []
+                            separated_objects[id_attr_value].append(model_instance)
+                            checked_objects.remove(instance_id)
+                            return model_instance, False, None
+                        elif scalar_value_session:
+                            continue
+
                         # Llamada recursiva estática
                         persisted_scalar_value, _, _ = DBManager.get_or_create(
                             session, # Pasar la sesión
                             attr_value,
                             is_model_func_override, # Pasar el override
-                            processed_objects
+                            checked_objects,
+                            separated_objects = separated_objects,
+                            current_object=temp_current_attr_name
                         )
-                        # if attr_value is not persisted_scalar_value:
+
                         setattr(model_instance, attr_name, persisted_scalar_value)
         
         # 2. Procesar la instancia actual
@@ -220,5 +251,20 @@ class DBManager:
             model_instance,
             current_model_constraints
         )
+
+        if instance_id in separated_objects.keys():
+            object_to_check = separated_objects.pop(instance_id)
+            for item in object_to_check:
+                setattr(item, model_class.__name__, persisted_instance)
+                DBManager.get_or_create(
+                    session, # Pasar la sesión
+                    item,
+                    is_model_func_override, # Pasar el override
+                    checked_objects,
+                    separated_objects = separated_objects,
+                    current_object=temp_current_attr_name
+                )
+
+            # persisted_instance = session.query(model_class).filter_by(**{f"ID{model_class.__name__}": getattr(persisted_instance, f"ID{model_class.__name__}")}).one_or_none()
         
         return persisted_instance, created, conflicting_attrs

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import datetime
 from typing import List, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from app.main.data.mapper import Mappable
 from werkzeug.datastructures import FileStorage
 
@@ -30,7 +30,7 @@ class ClassPeriodDTO(BaseDTO):
     StartDate: datetime.date
     EndDate: datetime.date
     CurrentPeriod: bool = False
-    Class_: List['ClassDTO'] = Field([], alias="Class") # Alias para evitar conflicto con Optional['Class'] = None keyword
+    Class: List['ClassDTO'] = []
 
 class ClassPeriodReadDTO(BaseDTO):
     IDClassPeriod: Optional[int] = None
@@ -99,7 +99,7 @@ class LevelDTO(BaseDTO):
     IDPreviousLevel: Optional[int] = None
     TextBook: Optional['TextBookDTO'] = None
     Sacrament: Optional['SacramentDTO'] = None
-    Class_: List['ClassDTO'] = Field([], alias="Class")
+    Class: List['ClassDTO'] = []
     ParticularClass: List['ParticularClassDTO'] = []
 
 # class LevelReadDTO(BaseDTO):
@@ -122,7 +122,7 @@ class ScheduleDTO(BaseDTO):
     StartHour: str
     EndHour: str
     DayOfTheWeek: Optional['DayOfTheWeekDTO'] = None
-    Class_: List['ClassDTO'] = Field([], alias="Class")
+    Class: List['ClassDTO'] = []
 
 # class ScheduleReadDTO(BaseDTO):
 #     IDSchedule: Optional[int] = None
@@ -191,7 +191,7 @@ class PersonDTO(BaseDTO):
     Address: Optional['AddressDTO'] = None
     BirthLocation: Optional['LocationDTO'] = None
     PhoneNumber: Optional['PhoneNumberDTO'] = None
-    HealthInformationEmergencyContactFor: List['HealthInformationDTO'] = Field([], alias="HealthInformation") # Casos donde esta persona es contacto de emergencia
+    HealthInformation: List['HealthInformationDTO'] = []
     # Roles/Aspectos específicos de la persona
     ParishPriest: Optional['ParishPriestDTO'] = None
     Catechist: Optional['CatechistDTO'] = None
@@ -210,7 +210,7 @@ class ClassroomDTO(BaseDTO):
     IDClassroom: Optional[int] = None
     ClassroomName: str
     Parish: Optional['ParishDTO'] = None
-    Class_: List['ClassDTO'] = Field([], alias="Class")
+    Class: List['ClassDTO'] = []
 
 # class ClassroomReadDTO(BaseDTO):
 #     IDClassroom: Optional[int] = None
@@ -221,7 +221,7 @@ class CatechistDTO(BaseDTO):
     IDCatechist: Optional[int] = None # Es el mismo que Person.IDPerson
     User: Optional['UserDTO'] = None
     Person: Optional['PersonDTO'] = None
-    Class_: List['ClassDTO'] = Field([], alias="Class")
+    Class: List['ClassDTO'] = []
 
 # class CatechistReadDTO(BaseDTO):
 #     IDCatechist: Optional[int] = None
@@ -250,7 +250,7 @@ class ParishPriestDTO(BaseDTO):
 class SupportPersonDTO(BaseDTO):
     IDSupportPerson: Optional[int] = None # Es el mismo que Person.IDPerson
     Person: Optional['PersonDTO'] = None
-    Class_: List['ClassDTO'] = Field([], alias="Class")
+    Class: List['ClassDTO'] = []
 
 # class SupportPersonReadDTO(BaseDTO):
 #     IDSupportPerson: Optional[int] = None # Es el mismo que Person.IDPerson
@@ -298,7 +298,7 @@ class CatechizingDTO(BaseDTO):
     SiblingsNumber: int
     ChildNumber: int
     PayedLevelCourse: bool
-    Class_: Optional['ClassDTO'] = Field(None, alias="Class")
+    Class: Optional['ClassDTO'] = None
     Person: Optional['PersonDTO'] = None
     BaptismalCertificate: Optional['BaptismalCertificateDTO'] = None
     DataSheet: Optional['DataSheetDTO'] = None
@@ -326,13 +326,13 @@ class BaptismalCertificateDTO(BaseDTO):
 class LevelCertificateDTO(BaseDTO):
     IDLevelCertificate: Optional[int] = None
     Catechizing: Optional['CatechizingDTO'] = None
-    Class_: Optional['ClassDTO'] = Field(None, alias="Class")
+    Class: Optional['ClassDTO'] = None
 
 class AttendedClassDTO(BaseDTO):
     IDCatechizing: Optional[int] = None
-    Date_: datetime.date = Field(alias="Date")
+    Date: datetime.date
     Catechizing: Optional['CatechizingDTO'] = None
-    Class_: Optional['ClassDTO'] = Field(None, alias="Class")
+    Class: Optional['ClassDTO'] = None
 
 class ParticularClassDTO(BaseDTO):
     IDParticularClass: Optional[int] = None

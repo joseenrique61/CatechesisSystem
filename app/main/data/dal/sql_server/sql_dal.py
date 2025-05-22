@@ -67,7 +67,7 @@ class SQLAlchemyDAL(IDataAccessLayer):
             logo_path = upload_image(parish_data.LogoImage)
             
             parish_data.Logo = logo_path
-            parish = Parish.from_other_obj(parish_data)
+            parish = Parish.from_other_obj(parish_data, exclude=["Classroom.Parish.Classroom"])
             parish, success, _ = DBManager.get_or_create(self.db, parish)
             
             parish_dto = ParishDTO.from_other_obj(parish)
