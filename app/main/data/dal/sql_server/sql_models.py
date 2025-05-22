@@ -221,15 +221,19 @@ class Schedule(BaseModel):
     __tablename__ = 'Schedule'
     __table_args__ = (
         ForeignKeyConstraint(['IDDayOfTheWeek'], ['ClassInformation.DayOfTheWeek.IDDayOfTheWeek'], name='fk_DayOfTheWeek_Schedule'),
+        ForeignKeyConstraint(['IDClassroom'], ['ClassInformation.Classroom.IDClassroom'], name='fk_Classroom_Schedule'),
         PrimaryKeyConstraint('IDSchedule', name='pk_Schedule_IDSchedule'),
+        Index('uk_Schedule_IDDayOfTheWeek_StartHour_EndHour_IDClassroom', 'IDDayOfTheWeek', 'IDClassroom', 'StartHour', 'EndHour', unique=True),
         {'schema': 'ClassInformation'}
     )
 
     IDSchedule: Mapped[int] = mapped_column(Integer, Identity(start=1, increment=1), primary_key=True)
     IDDayOfTheWeek: Mapped[int] = mapped_column(Integer)
+    IDClassroom: Mapped[int] = mapped_column(Integer)
     StartHour: Mapped[str] = mapped_column(String(5, 'Modern_Spanish_CI_AS'))
     EndHour: Mapped[str] = mapped_column(String(5, 'Modern_Spanish_CI_AS'))
 
+    Classroom: Mapped['Classroom'] = relationship('Classroom', back_populates='Schedule')
     DayOfTheWeek: Mapped['DayOfTheWeek'] = relationship('DayOfTheWeek', back_populates='Schedule')
     Class: Mapped[List['Class']] = relationship('Class', secondary='classinformation.ClassSchedule', back_populates='Schedule')
 
@@ -417,7 +421,7 @@ class Classroom(BaseModel):
     IDParish: Mapped[int] = mapped_column(Integer)
 
     Parish: Mapped['Parish'] = relationship('Parish', back_populates='Classroom')
-    Class: Mapped[List['Class']] = relationship('Class', secondary='classinformation.ClassClassroom', back_populates='Classroom')
+    Schedule: Mapped['Schedule'] = relationship('Schedule', back_populates='Classroom')
 
 
 class Catechist(BaseModel):
@@ -547,7 +551,6 @@ class Class(BaseModel):
     IDCatechist: Mapped[int] = mapped_column(Integer)
     IDSupportPerson: Mapped[int] = mapped_column(Integer)
 
-    Classroom: Mapped[List['Classroom']] = relationship('Classroom', secondary='classinformation.ClassClassroom', back_populates='Class')
     ClassPeriod: Mapped['ClassPeriod'] = relationship('ClassPeriod', back_populates='Class')
     Catechist: Mapped['Catechist'] = relationship('Catechist', back_populates='Class')
     Level: Mapped['Level'] = relationship('Level', back_populates='Class')
@@ -606,16 +609,6 @@ class Catechizing(BaseModel):
     AttendedClass: Mapped[List['AttendedClass']] = relationship('AttendedClass', back_populates='Catechizing')
     ParticularClass: Mapped[List['ParticularClass']] = relationship('ParticularClass', back_populates='Catechizing')
 
-
-t_ClassClassroom = Table(
-    'ClassClassroom', db.Model.metadata,
-    Column('IDClass', Integer, primary_key=True, nullable=False),
-    Column('IDClasroom', Integer, primary_key=True, nullable=False),
-    ForeignKeyConstraint(['IDClasroom'], ['ClassInformation.Classroom.IDClassroom'], name='fk_Classroom_ClassClassroom'),
-    ForeignKeyConstraint(['IDClass'], ['ClassInformation.Class.IDClass'], name='fk_Class_ClassClassroom'),
-    PrimaryKeyConstraint('IDClass', 'IDClasroom', name='pk_ClassClassroom_IDClass_IDClasroom'),
-    schema='classinformation'
-)
 
 
 t_ClassSchedule = Table(

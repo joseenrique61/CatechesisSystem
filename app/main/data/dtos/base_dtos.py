@@ -122,6 +122,7 @@ class ScheduleDTO(BaseDTO):
     StartHour: str
     EndHour: str
     DayOfTheWeek: Optional['DayOfTheWeekDTO'] = None
+    Classroom: Optional['ClassroomDTO'] = None
     Class: List['ClassDTO'] = []
 
 # class ScheduleReadDTO(BaseDTO):
@@ -267,7 +268,6 @@ class MainParishDTO(BaseDTO):
 
 class ClassDTO(BaseDTO):
     IDClass: Optional[int] = None
-    Classroom: List['ClassroomDTO'] = []
     ClassPeriod: Optional['ClassPeriodDTO'] = None
     Catechist: Optional['CatechistDTO'] = None
     Level: Optional['LevelDTO'] = None
