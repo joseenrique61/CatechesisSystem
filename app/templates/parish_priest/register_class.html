@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10 col-lg-10">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title text-center mb-4">{{ title }}</h2>
+                {% from "helpers/_formhelpers.html" import render_field %}
+                <form method=post>
+                    {% for field in form %}
+                        {% if field.type == 'FormField' %}
+                            {% for field1 in field %}
+                                {{ render_field(field1) }}
+                            {% endfor %}
+                        {% else %}
+                            {{ render_field(field) }}
+                        {% endif %}
+                    {% endfor %}
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

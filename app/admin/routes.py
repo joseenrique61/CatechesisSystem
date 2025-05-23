@@ -44,8 +44,7 @@ def register_parish_priest():
 def register_parish():
     form = ParishForm()
     if request.method == 'POST' and form.validate_on_submit():
-        parish = ParishDTO.from_other_obj(form, depth=-1, custom_var_path="data")
-        parish.Classroom = [ClassroomDTO(ClassroomName=classroom.data, Parish=parish) for classroom in form.ClassroomNames]
+        parish = ParishDTO.from_other_obj(form, depth=-1, custom_var_path="data", include=["Classroom"])
 
         try:
             parish, success = dal.register_parish(parish)

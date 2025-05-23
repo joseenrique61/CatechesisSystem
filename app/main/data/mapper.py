@@ -203,7 +203,7 @@ class Mappable:
                 
                 if isinstance(list_item_type_actual, type) and issubclass(list_item_type_actual, Mappable):
                     if db_attr_value is not None:
-                        if depth != -1 and current_depth == depth and temp_current_attr_name not in include and is_optional_target:
+                        if depth != -1 and current_depth >= depth and temp_current_attr_name not in include:
                             if debug: print(f"[DEBUG]   '{attr_name}' (tipo {actual_loc_type_for_conversion.__name__}) es subclase de Mappable. Depth máximo alcanzado")
                             continue
                         kwargs_for_constructor[attr_name] = []
@@ -222,7 +222,7 @@ class Mappable:
 
             # Mapeo de Mappables individuales (no listas)
             elif isinstance(actual_loc_type_for_conversion, type) and issubclass(actual_loc_type_for_conversion, Mappable):
-                if depth != -1 and current_depth == depth and temp_current_attr_name not in include and is_optional_target:
+                if depth != -1 and current_depth >= depth and temp_current_attr_name not in include and is_optional_target:
                     if debug: print(f"[DEBUG]   '{attr_name}' (tipo {actual_loc_type_for_conversion.__name__}) es subclase de Mappable. LlamDepth máximo alcanzado")
                     continue
                 if debug: print(f"[DEBUG]   '{attr_name}' (tipo {actual_loc_type_for_conversion.__name__}) es subclase de Mappable. Llamando recursivamente a from_db_obj.")
@@ -259,7 +259,7 @@ class Mappable:
         return instance
 
     @classmethod
-    def from_other_obj(cls: typing.Type[_T], db_obj: typing.Any, depth: int = 1, custom_var_path: str = "", ignore_optional: bool = False, ignore_lists: bool = False, include: list[str] = [], exclude: list[str] = []) -> _T:
+    def from_other_obj(cls: typing.Type[_T], db_obj: typing.Any, depth: int = 1, custom_var_path: str = "", ignore_optional: bool = False, ignore_lists: bool = True, include: list[str] = [], exclude: list[str] = []) -> _T:
         """
         Crea una instancia de 'cls' (una clase *DTO) a partir de 'db_obj', 
         mapeando atributos con el mismo nombre.

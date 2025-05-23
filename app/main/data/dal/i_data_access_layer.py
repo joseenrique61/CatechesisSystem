@@ -124,3 +124,27 @@ class IDataAccessLayer(ABC):
     @abstractmethod
     def get_class_by_id(self, class_id: int) -> Optional[ClassDTO]:
         pass
+
+    @abstractmethod
+    def get_all_periods(self) -> List[ClassPeriodDTO]:
+        pass
+
+    @abstractmethod
+    def get_all_levels(self) -> List[LevelDTO]:
+        pass
+
+    @abstractmethod
+    def get_all_catechists(self) -> List[CatechistDTO]:
+        pass
+
+    @abstractmethod
+    def get_all_support_person(self) -> List[SupportPersonDTO]:
+        pass
+
+    @abstractmethod
+    def get_all_day_of_the_week(self) -> List[DayOfTheWeekDTO]:
+        pass
+
+    @abstractmethod
+    def get_classroom_in_parish(self, parish_id: int) -> List[ClassroomDTO]:
+        pass

@@ -55,6 +55,24 @@ class SQLAlchemyDAL(IDataAccessLayer):
     def get_level_by_name(self, level):
         return LevelDTO.from_other_obj(self.db.query(Level).filter_by(Level=level).first())
     
+    def get_all_periods(self) -> List[ClassPeriodDTO]:
+        return [ClassPeriodDTO.from_other_obj(class_period) for class_period in self.db.query(ClassPeriod).all()]
+
+    def get_all_levels(self) -> List[LevelDTO]:
+        return [LevelDTO.from_other_obj(level) for level in self.db.query(Level).all()]
+
+    def get_all_catechists(self) -> List[CatechistDTO]:
+        return [CatechistDTO.from_other_obj(catechist) for catechist in self.db.query(Catechist).all()]
+
+    def get_all_support_person(self) -> List[SupportPersonDTO]:
+        return [SupportPersonDTO.from_other_obj(support_person) for support_person in self.db.query(SupportPerson).all()]
+
+    def get_all_day_of_the_week(self) -> List[DayOfTheWeekDTO]:
+        return [DayOfTheWeekDTO.from_other_obj(day_of_the_week) for day_of_the_week in self.db.query(DayOfTheWeek).all()]
+
+    def get_classroom_in_parish(self, parish_id: int) -> List[ClassroomDTO]:
+        return [ClassroomDTO.from_other_obj(classroom) for classroom in self.db.query(Classroom).filter_by(IDParish=parish_id).all()]
+
     # --- Parish Methods ---
     def register_parish(self, parish_data: ParishDTO) -> tuple[ParishDTO, bool]:
         """
@@ -67,7 +85,7 @@ class SQLAlchemyDAL(IDataAccessLayer):
             logo_path = upload_image(parish_data.LogoImage)
             
             parish_data.Logo = logo_path
-            parish = Parish.from_other_obj(parish_data, exclude=["Classroom.Parish.Classroom"])
+            parish = Parish.from_other_obj(parish_data, exclude=["Classroom.Parish.Classroom"], include=["Classroom"])
             parish, success, _ = DBManager.get_or_create(self.db, parish)
             
             parish_dto = ParishDTO.from_other_obj(parish)
@@ -86,7 +104,7 @@ class SQLAlchemyDAL(IDataAccessLayer):
         return ParishDTO.from_other_obj(self.db.query(Parish).filter_by(IDParish=parish_id).first())
 
     def get_all_parishes(self) -> List[ParishDTO]:
-        return [ParishDTO.from_other_obj(parish) for parish in self.db.query(Parish).all()]
+        return [ParishDTO.from_other_obj(parish, exclude=["Address.Location.Person"]) for parish in self.db.query(Parish).all()]
 
     def update_parish(self, parish_id: int, parish_data: ParishDTO) -> Optional[ParishDTO]:
         pass
@@ -104,7 +122,7 @@ class SQLAlchemyDAL(IDataAccessLayer):
         """
         try:
             parish_priest = ParishPriest.from_other_obj(priest_data)
-            parish_priest, success, _ = DBManager.get_or_create(self.db, parish_priest)
+            parish_priest, success, _ = DBManager.get_or_create(self.db, parish_priest, ignore_duplicate_error_for=["Parish"])
             
             parish_priest_dto = ParishPriestDTO.from_other_obj(parish_priest)
             self.db.commit()
@@ -113,7 +131,7 @@ class SQLAlchemyDAL(IDataAccessLayer):
             raise
 
     def get_parish_priest_by_id(self, priest_id: int) -> Optional[ParishPriestDTO]:
-        pass # ID se refiere a Person.IDPerson
+        return ParishPriestDTO.from_other_obj(self.db.query(ParishPriest).filter_by(IDParishPriest=priest_id).one_or_none())
 
     def get_parish_priests_by_parish(self, parish_id: int) -> List[ParishPriestDTO]:
         pass

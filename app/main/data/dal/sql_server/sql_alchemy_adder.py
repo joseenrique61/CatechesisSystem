@@ -1,7 +1,7 @@
-from sqlalchemy.orm import Session, object_session, make_transient, DeclarativeBase
+from sqlalchemy.orm import Session, object_session
 from sqlalchemy import Index, PrimaryKeyConstraint
 from sqlalchemy.exc import IntegrityError
-from typing import Type, TypeVar, Optional, Any, Callable, get_origin, List as TypingList
+from typing import Type, TypeVar, Optional, Any, Callable, List as TypingList
 from app.main.data.dal.sql_server.sql_models import BaseModel
 from app.main.data.duplicate_column_exception import DuplicateColumnException
 
@@ -49,7 +49,8 @@ class DBManager:
     def _get_or_create_single(
         session: Session, # <--- Argumento añadido
         model_instance: SQLAlchemyModel,
-        unique_constraints: TypingList[TypingList[str]]
+        unique_constraints: TypingList[TypingList[str]],
+        ignore_duplicate_error: bool
     ) -> tuple[SQLAlchemyModel, bool, Optional[TypingList[str]]]:
         """
         Lógica para una sola instancia. Ahora es estático y recibe la sesión.
@@ -77,7 +78,7 @@ class DBManager:
                         continue
                     existing_instance = session.query(model_class).filter_by(**filter_conditions).one_or_none()
                     if existing_instance:
-                        if model_instance.__should_raise_error_if_duplicate__:
+                        if model_instance.__should_raise_error_if_duplicate__ and not ignore_duplicate_error:
                             raise DuplicateColumnException(model_class.__name__, constraint_attrs)
 
                         if object_session(model_instance) == session and model_instance in session.new:
@@ -136,8 +137,9 @@ class DBManager:
         session: Session,
         model_instance: SQLAlchemyModel,
         is_model_func_override: Optional[Callable[[Any], bool]] = None,
+        ignore_duplicate_error_for: list[str] = [],
         checked_objects: Optional[set[int]] = None,
-        separated_objects: Optional[dict[int, list[SQLAlchemyModel]]] = None, # 
+        separated_objects: Optional[dict[int, list[SQLAlchemyModel]]] = None, 
         current_object: str = ""
     ) -> tuple[SQLAlchemyModel, bool, Optional[TypingList[str]]]:
         if model_instance is None:
@@ -154,9 +156,7 @@ class DBManager:
 
         instance_id = id(model_instance)
         # ... (misma lógica de processed_objects y comprobación de estado de sesión) ...
-        # current_instance_session_state = object_session(model_instance)
         if instance_id in checked_objects:
-            # if current_instance_session_state == session and not session.is_modified(model_instance, include_collections=False) and model_instance not in session.new and model_instance not in session.deleted:
             return None, False, None 
             # else: Continuar para procesar si no está limpio y persistente
 
@@ -174,20 +174,17 @@ class DBManager:
                     attr_value = getattr(model_instance, attr_name)
                 except AttributeError: continue
 
-                if attr_value is None:
-                    continue
-                
-                if not hasattr(model_instance, f"ID{attr_name}"):
-                    is_one_to_many = False
-                elif (id_attr := getattr(model_instance, f"ID{attr_name}", None)) is not None:
+                if hasattr(model_instance, f"ID{attr_name}"):
                     is_one_to_many = True
+                
+                if attr_value is None and is_one_to_many and (id_attr := getattr(model_instance, f"ID{attr_name}", None)) is not None:
                     id_condition = {f"ID{attr_name}": id_attr}
                     attr_value = session.query(model_class).filter_by(**id_condition).one_or_none()
                     if attr_value is None:
                         continue
                     setattr(model_instance, attr_name, attr_value)
-                else:
-                    is_one_to_many = True
+                # else:
+                #     is_one_to_many = True
 
                 if rel_prop.uselist: # Colección
                     new_list_items = []
@@ -195,15 +192,13 @@ class DBManager:
 
                     for item_in_list in current_items_iterable:
                         if _is_model_func_to_use(item_in_list):
-                            item_session = object_session(item_in_list)
-                            # if item_session is not None and item_session != session:
-                            #     make_transient(item_in_list)
                             
                             # Llamada recursiva estática
                             persisted_item, _, _ = DBManager.get_or_create(
                                 session, # Pasar la sesión
                                 item_in_list,
                                 is_model_func_override, # Pasar el override
+                                ignore_duplicate_error_for,
                                 checked_objects,
                                 separated_objects = separated_objects,
                                 current_object=temp_current_attr_name
@@ -218,8 +213,6 @@ class DBManager:
                 else: # Relación escalar
                     if _is_model_func_to_use(attr_value):
                         scalar_value_session = object_session(attr_value)
-                        # if scalar_value_session is not None and scalar_value_session != session:
-                        #     make_transient(attr_value)
                         
                         if is_one_to_many and (id_attr_value := id(attr_value)) in checked_objects and not scalar_value_session:
                             if separated_objects.get(id_attr_value) is None:
@@ -235,6 +228,7 @@ class DBManager:
                             session, # Pasar la sesión
                             attr_value,
                             is_model_func_override, # Pasar el override
+                            ignore_duplicate_error_for,
                             checked_objects,
                             separated_objects = separated_objects,
                             current_object=temp_current_attr_name
@@ -249,7 +243,8 @@ class DBManager:
         persisted_instance, created, conflicting_attrs = DBManager._get_or_create_single(
             session, # Pasar la sesión
             model_instance,
-            current_model_constraints
+            current_model_constraints,
+            ignore_duplicate_error=current_object in ignore_duplicate_error_for
         )
 
         if instance_id in separated_objects.keys():
@@ -265,6 +260,4 @@ class DBManager:
                     current_object=temp_current_attr_name
                 )
 
-            # persisted_instance = session.query(model_class).filter_by(**{f"ID{model_class.__name__}": getattr(persisted_instance, f"ID{model_class.__name__}")}).one_or_none()
-        
         return persisted_instance, created, conflicting_attrs

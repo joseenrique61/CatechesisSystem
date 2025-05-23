@@ -32,20 +32,13 @@ class ClassPeriodDTO(BaseDTO):
     CurrentPeriod: bool = False
     Class: List['ClassDTO'] = []
 
-class ClassPeriodReadDTO(BaseDTO):
-    IDClassPeriod: Optional[int] = None
-    StartDate: datetime.date
-    EndDate: datetime.date
-    CurrentPeriod: bool 
+    def __str__(self):
+        return f"{'Actual' if self.CurrentPeriod else 'Antiguo'} - Fecha de inicio: {self.StartDate}, Fecha de fin: {self.EndDate}"
 
 class DayOfTheWeekDTO(BaseDTO):
     IDDayOfTheWeek: Optional[int] = None
     DayOfTheWeek: str
     Schedule: List['ScheduleDTO'] = []
-
-# class DayOfTheWeekReadDTO(BaseDTO):
-#     IDDayOfTheWeek: Optional[int] = None
-#     DayOfTheWeek: str
 
 class LocationDTO(BaseDTO):
     IDLocation: Optional[int] = None
@@ -83,14 +76,6 @@ class UserDTO(BaseDTO):
     Catechist: Optional['CatechistDTO'] = None
     ParishPriest: Optional['ParishPriestDTO'] = None
 
-# class UserReadDTO(BaseDTO):
-#     IDUser: Optional[int] = None
-#     Username: str
-#     Role: Optional['RoleDTO'] = None
-#     Administrator: Optional['AdministratorDTO'] = None
-#     Catechist: Optional['CatechistDTO'] = None
-#     ParishPriest: Optional['ParishPriestDTO'] = None
-
 class LevelDTO(BaseDTO):
     IDLevel: Optional[int] = None
     Name: str
@@ -102,15 +87,6 @@ class LevelDTO(BaseDTO):
     Class: List['ClassDTO'] = []
     ParticularClass: List['ParticularClassDTO'] = []
 
-# class LevelReadDTO(BaseDTO):
-#     IDLevel: Optional[int] = None
-#     Name: str
-#     MinAge: int
-#     MaxAge: int
-#     IDPreviousLevel: Optional[int] = None
-#     TextBook: Optional['TextBookDTO'] = None
-#     Sacrament: Optional['SacramentReadDTO'] = None
-
 class BaptismalBookPageDTO(BaseDTO):
     IDBaptismalBookPage: Optional[int] = None
     Page: int
@@ -121,15 +97,11 @@ class ScheduleDTO(BaseDTO):
     IDSchedule: Optional[int] = None
     StartHour: str
     EndHour: str
+    IDDayOfTheWeek: Optional[int] = None
     DayOfTheWeek: Optional['DayOfTheWeekDTO'] = None
+    IDClassroom: Optional[int] = None
     Classroom: Optional['ClassroomDTO'] = None
     Class: List['ClassDTO'] = []
-
-# class ScheduleReadDTO(BaseDTO):
-#     IDSchedule: Optional[int] = None
-#     StartHour: str
-#     EndHour: str
-#     DayOfTheWeek: Optional['DayOfTheWeekReadDTO'] = None
 
 class AddressDTO(BaseDTO):
     IDAddress: Optional[int] = None
@@ -166,10 +138,6 @@ class SacramentDTO(BaseDTO):
     Name: str
     Level: Optional['LevelDTO'] = None
     Catechizing: List['CatechizingDTO'] = []
-
-# class SacramentReadDTO(BaseDTO):
-#     IDSacrament: Optional[int] = None
-#     Name: str
 
 class HealthInformationDTO(BaseDTO):
     Catechizing: Optional['CatechizingDTO'] = None
@@ -213,20 +181,11 @@ class ClassroomDTO(BaseDTO):
     Parish: Optional['ParishDTO'] = None
     Class: List['ClassDTO'] = []
 
-# class ClassroomReadDTO(BaseDTO):
-#     IDClassroom: Optional[int] = None
-#     ClassroomName: str
-#     Parish: Optional['ParishDTO'] = None
-
 class CatechistDTO(BaseDTO):
     IDCatechist: Optional[int] = None # Es el mismo que Person.IDPerson
     User: Optional['UserDTO'] = None
     Person: Optional['PersonDTO'] = None
     Class: List['ClassDTO'] = []
-
-# class CatechistReadDTO(BaseDTO):
-#     IDCatechist: Optional[int] = None
-#     Person: Optional['PersonDTO'] = None
 
 class GodparentDTO(BaseDTO):
     IDGodparent: Optional[int] = None # Es el mismo que Person.IDPerson
@@ -253,10 +212,6 @@ class SupportPersonDTO(BaseDTO):
     Person: Optional['PersonDTO'] = None
     Class: List['ClassDTO'] = []
 
-# class SupportPersonReadDTO(BaseDTO):
-#     IDSupportPerson: Optional[int] = None # Es el mismo que Person.IDPerson
-#     Person: Optional['PersonDTO'] = None
-
 class SchoolClassYearDTO(BaseDTO):
     IDSchoolClassYear: Optional[int] = None
     SchoolYear: str
@@ -268,23 +223,18 @@ class MainParishDTO(BaseDTO):
 
 class ClassDTO(BaseDTO):
     IDClass: Optional[int] = None
+    IDClassPeriod: Optional[int] = None
     ClassPeriod: Optional['ClassPeriodDTO'] = None
+    IDCatechist: Optional[int] = None
     Catechist: Optional['CatechistDTO'] = None
+    IDLevel: Optional[int] = None
     Level: Optional['LevelDTO'] = None
+    IDSupportPerson: Optional[int] = None
     SupportPerson: Optional['SupportPersonDTO'] = None
     Schedule: List['ScheduleDTO'] = []
     Catechizing: List['CatechizingDTO'] = []
     LevelCertificate: List['LevelCertificateDTO'] = []
     AttendedClass: List['AttendedClassDTO'] = []
-
-# class ClassReadDTO(BaseDTO):
-#     IDClass: Optional[int] = None
-#     Classroom: List['ClassroomReadDTO'] = []
-#     ClassPeriod: Optional['ClassPeriodReadDTO'] = None
-#     Catechist: Optional['CatechistReadDTO'] = None
-#     Level: Optional['LevelReadDTO'] = None
-#     SupportPerson: Optional['SupportPersonReadDTO'] = None
-#     Schedule: List['ScheduleReadDTO'] = []
 
 class ClassAuthorizationDTO(BaseDTO):
     IDClassAuthorization: Optional[int] = None
@@ -341,130 +291,6 @@ class ParticularClassDTO(BaseDTO):
     ClassAuthorization: Optional['ClassAuthorizationDTO'] = None
     Level: Optional['LevelDTO'] = None
     
-# --- Create DTOs
-# class UserCreateDTO(BaseDTO):
-#     Username: str
-#     Password: str
-#     Role: RoleDTO
-
-# class PhoneNumberCreateDTO(BaseDTO):
-#     Number: str
-#     Type: int
-
-# class PersonCreateDTO(BaseDTO):
-#     FirstName: str
-#     MiddleName: str
-#     FirstSurname: str
-#     SecondSurname: str
-#     BirthDate: datetime.date
-#     BirthLocation: 'LocationCreateDTO'
-#     DNI: str
-#     Gender: str
-#     Address: 'AddressCreateDTO'
-#     PhoneNumber: PhoneNumberCreateDTO
-#     EmailAddress: str
-
-# class ClassroomCreateDTO(BaseDTO):
-#     ClassroomName: str
-
-# class ParishCreateDTO(ParishDTO):
-#     LogoImage: Optional[FileStorage] = None
-
-# class ParishUpdateDTO(BaseDTO):
-#     Name: Optional[str] = None
-#     IDAddress: Optional[int] = None
-#     Logo: Optional[bytes] = None # Permite enviar None para borrar el logo si se implementa así
-
-# class ParishPriestCreateDTO(BaseDTO):
-#     Person: PersonCreateDTO # Datos para crear la persona asociada
-#     User: UserCreateDTO     # Datos para crear el usuario asociado
-#     IDParish: Optional[int] = None           # ID de la parroquia a la que se asigna
-
-# class ParishPriestUpdateDTO(BaseDTO):
-#     # Define qué se puede actualizar. Por ejemplo, reasignar parroquia.
-#     # La actualización de Person o User podría ser a través de sus propios métodos.
-#     IDParish: Optional[int] = None
-#     # Podrías añadir campos para actualizar datos de User o Person si la lógica lo permite aquí
-#     # User_Username: Optional[str] = None
-#     # Person_Email: Optional[str] = None
-
-
-# class CatechistCreateDTO(BaseDTO):
-#     Person: PersonCreateDTO
-#     User: UserCreateDTO
-
-# class CatechistUpdateDTO(BaseDTO):
-#     # Similar a ParishPriestUpdateDTO, define qué se puede modificar.
-#     # Por ejemplo, si un catequista cambia de email (actualizando Person)
-#     # Person_Email: Optional[str] = None
-#     pass
-
-# class SchoolClassYearCreateDTO(BaseDTO):
-#     SchoolYear: str
-#     IDSchool: Optional[int] = None
-
-# class AllergyCreateDTO(BaseDTO):
-#     Allergy: str
-
-# class HealthInformationCreateDTO(BaseDTO):
-#     ImportantAspects: str
-#     Allergy: List['AllergyCreateDTO'] = []
-#     BloodType: 'BloodTypeDTO'
-#     EmergencyContact: 'PersonDTO' # La persona que es el contacto de emergencia
-
-# class DataSheetCreateDTO(BaseDTO):
-#     DataSheetInformation: str
-
-# class ClassAuthorizationCreateDTO(BaseDTO):
-#     IssueDate: datetime.date
-#     ParishPriest: 'ParishPriestDTO'
-
-# class ParticularClassCreateDTO(BaseDTO):
-#     ClassDate: datetime.date
-#     ClassAuthorization: 'ClassAuthorizationCreateDTO'
-#     Level: 'LevelDTO'
-
-# class ParentCreateDTO(BaseDTO):
-#     Person: PersonCreateDTO
-#     Occupation: str
-
-# class GodparentCreateDTO(BaseDTO):
-#     Person: PersonCreateDTO
-
-# class CatechizingCreateDTO(BaseDTO):
-#     Person: PersonCreateDTO
-#     IsLegitimate: bool
-#     SiblingsNumber: int
-#     ChildNumber: int
-#     SchoolClassYear: 'SchoolClassYearCreateDTO'
-#     IDClass: Optional[int] = None           # ID de la clase existente
-#     PayedLevelCourse: bool
-#     Parents: List['ParentCreateDTO'] = [] # Para crear o enlazar padres
-#     Godparents: List['GodparentCreateDTO'] = [] # Para crear o enlazar padrinos
-#     HealthInformation: 'HealthInformationCreateDTO'
-#     DataSheet: 'DataSheetCreateDTO'
-#     ParticularClass: Optional['ParticularClassCreateDTO'] = None
-
-# class CatechizingUpdateDTO(BaseDTO):
-#     IsLegitimate: Optional[bool] = None
-#     SiblingsNumber: Optional[int] = None
-#     ChildNumber: Optional[int] = None
-#     IDSchoolClassYear: Optional[int] = None
-#     IDClass: Optional[int] = None
-#     PayedLevelCourse: Optional[bool] = None
-
-# class LocationCreateDTO(BaseDTO):
-#     Country: str
-#     State: str
-#     Province: str
-
-
-# class AddressCreateDTO(BaseDTO):
-#     Location: LocationCreateDTO
-#     MainStreet: str
-#     Number: str
-#     SecondStreet: str
-
 # --- Rebuild Models to Resolve Forward References ---
 
 dto_models = [

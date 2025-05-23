@@ -39,9 +39,12 @@ class PersonForm(Form):
     PhoneNumber = FormField(PhoneNumberForm, label="Número de teléfono")
     EmailAddress = EmailField('Correo electrónico', [validators.Length(min=1, max=100)])
 
+class ClassroomForm(FlaskForm):
+    ClassroomName = StringField("Nombre del aula", [validators.Length(min=1, max=5)])
+
 class ParishForm(FlaskForm):
     Name = StringField('Nombre de la parroquia', [validators.Length(min=1, max=100)])
     LogoImage = FileField('Logo', render_kw={'accept': 'image/png, image/jpeg, image/jpg'}, validators=[FileRequired(), FileAllowed(['jpg', 'png', 'jpeg'])])
     Address = FormField(AddressForm, label='Dirección')
-    ClassroomNames = FieldList(StringField('Nombre del aula'), min_entries=2, label='Aulas')
+    Classroom = FieldList(FormField(ClassroomForm), min_entries=2, label='Aulas')
     Submit = SubmitField('Registrar')
