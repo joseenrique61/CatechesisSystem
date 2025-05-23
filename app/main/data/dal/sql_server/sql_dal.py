@@ -189,6 +189,18 @@ class SQLAlchemyDAL(IDataAccessLayer):
     def delete_catechizing(self, catechizing_id: int) -> bool:
         pass
 
+    # --- Métodos de support person ---
+    def register_support_person(self, support_person_data: SupportPersonDTO) -> SupportPersonDTO:
+        try:
+            support_person = SupportPerson.from_other_obj(support_person_data)
+            support_person, success, _ = DBManager.get_or_create(self.db, support_person)
+            
+            support_person_dto = SupportPersonDTO.from_other_obj(support_person)
+            self.db.commit()
+            return support_person_dto, success
+        except:
+            raise
+
     # --- Métodos de class ---
     def register_class(self, class_data: ClassDTO) -> CatechistDTO:
         try:

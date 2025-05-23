@@ -152,3 +152,7 @@ class IDataAccessLayer(ABC):
     @abstractmethod
     def get_class_period_by_id(self, period_id: int) -> Optional[ClassPeriodDTO]:
         pass
+
+    @abstractmethod
+    def register_support_person(self, support_person_data: SupportPersonDTO) -> SupportPersonDTO:
+        pass

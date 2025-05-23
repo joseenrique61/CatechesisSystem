@@ -102,4 +102,8 @@ class CatechistForm(FlaskForm):
     User = FormField(UserForm, label='Datos de usuario')
     Person = FormField(PersonForm, label='Datos del catequista')
     Submit = SubmitField('Registrar catequista')
+
+class SupportPersonForm(FlaskForm):
+    Person = FormField(PersonForm, label='Datos de la persona de soporte')
+    Submit = SubmitField('Registrar persona de soporte')
         
