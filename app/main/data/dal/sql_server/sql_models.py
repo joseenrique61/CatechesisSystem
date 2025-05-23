@@ -195,7 +195,7 @@ class Level(BaseModel):
     Level: Mapped[Optional['Level']] = relationship('Level', remote_side=[IDLevel], back_populates='Level_reverse')
     Level_reverse: Mapped[List['Level']] = relationship('Level', remote_side=[IDPreviousLevel], back_populates='Level')
     TextBook: Mapped['TextBook'] = relationship('TextBook', back_populates='Level')
-    Sacrament: Mapped[List['Sacrament']] = relationship('Sacrament', back_populates='Level')
+    Sacrament: Mapped['Sacrament'] = relationship('Sacrament', back_populates='Level', uselist=False)
     Class: Mapped[List['Class']] = relationship('Class', back_populates='Level')
     ParticularClass: Mapped[List['ParticularClass']] = relationship('ParticularClass', back_populates='Level')
 
@@ -324,7 +324,7 @@ class Sacrament(BaseModel):
     Name: Mapped[str] = mapped_column(Unicode(100, 'Modern_Spanish_CI_AS'))
     IDLevel: Mapped[int] = mapped_column(Integer)
 
-    Level: Mapped['Level'] = relationship('Level', back_populates='Sacrament')
+    Level: Mapped['Level'] = relationship('Level', back_populates='Sacrament', uselist=False)
     Catechizing: Mapped[List['Catechizing']] = relationship('Catechizing', secondary='catechesis.CatechizingSacrament', back_populates='Sacrament')
 
 
@@ -421,7 +421,7 @@ class Classroom(BaseModel):
     IDParish: Mapped[int] = mapped_column(Integer)
 
     Parish: Mapped['Parish'] = relationship('Parish', back_populates='Classroom')
-    Schedule: Mapped['Schedule'] = relationship('Schedule', back_populates='Classroom')
+    Schedule: Mapped[List['Schedule']] = relationship('Schedule', back_populates='Classroom')
 
 
 class Catechist(BaseModel):

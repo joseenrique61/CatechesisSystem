@@ -3,6 +3,7 @@ from wtforms.validators import DataRequired, Length, Optional, NumberRange
 from flask_wtf import FlaskForm
 from flask import session
 from app.main.forms import PersonForm
+from app.auth.forms import UserForm
 from app import dal
 
 class SchoolClassYearForm(FlaskForm):
@@ -63,6 +64,14 @@ class ScheduleForm(FlaskForm):
         self.IDDayOfTheWeek.choices = [(item.IDDayOfTheWeek, item.DayOfTheWeek) for item in dal.get_all_day_of_the_week()]
         # self.IDClassroom.choices = [(item.IDClassroom, item.ClassroomName) for item in dal.get_classroom_in_parish(dal.get_parish_priest_by_id(session.get("id")).IDParish)]
         self.IDClassroom.choices = [(item.IDClassroom, item.ClassroomName) for item in dal.get_classroom_in_parish(dal.get_parish_priest_by_id(37).IDParish)]
+    
+    def validate_StartHour(self, field):
+        if field.data:
+            field.data = f"{'0' if field.data.hour < 10 else ''}{field.data.hour}:{field.data.minute}"
+
+    def validate_EndHour(self, field):
+        if field.data:
+            field.data = f"{'0' if field.data.hour < 10 else ''}{field.data.hour}:{field.data.minute}"
 
 class ClassForm(FlaskForm):
     IDClassPeriod = SelectField('Periodo de clases', coerce=int)
@@ -76,6 +85,21 @@ class ClassForm(FlaskForm):
         super(ClassForm, self).__init__(*args, **kwargs)
         self.IDClassPeriod.choices = [(item.IDClassPeriod, str(item)) for item in dal.get_all_periods()]
         self.IDLevel.choices = [(item.IDLevel, item.Name) for item in dal.get_all_levels()]
-        self.IDCatechist.choices = [(item.IDCatechist, f"{item.Person.FirstName} {item.Person.FirstSurname}") for item in dal.get_all_catechists()]
-        self.IDSupportPerson.choices = [(item.IDSupportPerson, f"{item.Person.FirstName} {item.Person.FirstSurname}") for item in dal.get_all_support_person()]
+        
+        catechists = dal.get_all_catechists()
+        if catechists:
+            self.IDCatechist.choices = []
+            for catechist in catechists:
+                self.IDCatechist.choices.append((catechist.IDCatechist, f"{catechist.Person.FirstName} {catechist.Person.FirstSurname}"))
+
+        support_persons = dal.get_all_support_person()
+        if support_persons:
+            self.IDSupportPerson.choices = []
+            for support_person in support_persons:
+                self.IDSupportPerson.choices.append((support_person.IDSupportPerson, f"{support_person.Person.FirstName} {support_person.Person.FirstSurname}"))
+
+class CatechistForm(FlaskForm):
+    User = FormField(UserForm, label='Datos de usuario')
+    Person = FormField(PersonForm, label='Datos del catequista')
+    Submit = SubmitField('Registrar catequista')
         

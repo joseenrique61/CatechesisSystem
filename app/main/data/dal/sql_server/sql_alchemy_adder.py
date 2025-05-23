@@ -178,13 +178,12 @@ class DBManager:
                     is_one_to_many = True
                 
                 if attr_value is None and is_one_to_many and (id_attr := getattr(model_instance, f"ID{attr_name}", None)) is not None:
+                    # with session.no_autoflush:
                     id_condition = {f"ID{attr_name}": id_attr}
-                    attr_value = session.query(model_class).filter_by(**id_condition).one_or_none()
+                    attr_value = session.query(rel_prop.mapper.class_).filter_by(**id_condition).one_or_none()
                     if attr_value is None:
                         continue
                     setattr(model_instance, attr_name, attr_value)
-                # else:
-                #     is_one_to_many = True
 
                 if rel_prop.uselist: # Colección
                     new_list_items = []

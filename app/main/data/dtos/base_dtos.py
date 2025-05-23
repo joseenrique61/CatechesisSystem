@@ -179,7 +179,7 @@ class ClassroomDTO(BaseDTO):
     IDClassroom: Optional[int] = None
     ClassroomName: str
     Parish: Optional['ParishDTO'] = None
-    Class: List['ClassDTO'] = []
+    Schedule: List['ScheduleDTO'] = []
 
 class CatechistDTO(BaseDTO):
     IDCatechist: Optional[int] = None # Es el mismo que Person.IDPerson

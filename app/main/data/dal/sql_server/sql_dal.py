@@ -1,5 +1,6 @@
 from app.main.data.dal.i_data_access_layer import IDataAccessLayer
 from sqlalchemy.orm import Session
+from sqlalchemy import asc, desc
 from typing import Optional
 from app.main.data.dal.sql_server.sql_alchemy_adder import DBManager
 from app.main.data.dtos.base_dtos import *
@@ -56,10 +57,10 @@ class SQLAlchemyDAL(IDataAccessLayer):
         return LevelDTO.from_other_obj(self.db.query(Level).filter_by(Level=level).first())
     
     def get_all_periods(self) -> List[ClassPeriodDTO]:
-        return [ClassPeriodDTO.from_other_obj(class_period) for class_period in self.db.query(ClassPeriod).all()]
+        return [ClassPeriodDTO.from_other_obj(class_period) for class_period in self.db.query(ClassPeriod).order_by(desc(ClassPeriod.IDClassPeriod)).all()]
 
     def get_all_levels(self) -> List[LevelDTO]:
-        return [LevelDTO.from_other_obj(level) for level in self.db.query(Level).all()]
+        return [LevelDTO.from_other_obj(level) for level in self.db.query(Level).order_by(asc(Level.IDLevel)).all()]
 
     def get_all_catechists(self) -> List[CatechistDTO]:
         return [CatechistDTO.from_other_obj(catechist) for catechist in self.db.query(Catechist).all()]
@@ -68,7 +69,7 @@ class SQLAlchemyDAL(IDataAccessLayer):
         return [SupportPersonDTO.from_other_obj(support_person) for support_person in self.db.query(SupportPerson).all()]
 
     def get_all_day_of_the_week(self) -> List[DayOfTheWeekDTO]:
-        return [DayOfTheWeekDTO.from_other_obj(day_of_the_week) for day_of_the_week in self.db.query(DayOfTheWeek).all()]
+        return [DayOfTheWeekDTO.from_other_obj(day_of_the_week) for day_of_the_week in self.db.query(DayOfTheWeek).order_by(asc(DayOfTheWeek.IDDayOfTheWeek)).all()]
 
     def get_classroom_in_parish(self, parish_id: int) -> List[ClassroomDTO]:
         return [ClassroomDTO.from_other_obj(classroom) for classroom in self.db.query(Classroom).filter_by(IDParish=parish_id).all()]
@@ -121,6 +122,7 @@ class SQLAlchemyDAL(IDataAccessLayer):
         :return: Una tupla con el objeto ParishPriestDTO creado y un booleano indicando si fue creado o no.
         """
         try:
+            priest_data.User.Role.Role = "ParishPriest"
             parish_priest = ParishPriest.from_other_obj(priest_data)
             parish_priest, success, _ = DBManager.get_or_create(self.db, parish_priest, ignore_duplicate_error_for=["Parish"])
             
@@ -145,13 +147,22 @@ class SQLAlchemyDAL(IDataAccessLayer):
 
     # --- Catechist Methods ---
     def register_catechist(self, catechist_data: CatechistDTO) -> CatechistDTO:
-        pass
+        try:
+            catechist_data.User.Role.Role = "Catechist"
+            catechist = Catechist.from_other_obj(catechist_data)
+            catechist, success, _ = DBManager.get_or_create(self.db, catechist)
+            
+            catechist_dto = CatechistDTO.from_other_obj(catechist)
+            self.db.commit()
+            return catechist_dto, success
+        except:
+            raise
 
     def get_catechist_by_id(self, catechist_id: int) -> Optional[CatechistDTO]:
         pass # ID se refiere a Person.IDPerson
 
     def get_all_catechists(self) -> List[CatechistDTO]:
-        pass
+        return [CatechistDTO.from_other_obj(catechist) for catechist in self.db.query(Catechist).all()]
 
     def update_catechist(self, catechist_id: int, catechist_data: CatechistDTO) -> Optional[CatechistDTO]:
         pass
@@ -178,6 +189,19 @@ class SQLAlchemyDAL(IDataAccessLayer):
     def delete_catechizing(self, catechizing_id: int) -> bool:
         pass
 
+    # --- Métodos de class ---
+    def register_class(self, class_data: ClassDTO) -> CatechistDTO:
+        try:
+            class_obj = Class.from_other_obj(class_data, include=["Schedule"])
+            class_obj, success, _ = DBManager.get_or_create(self.db, class_obj)
+            
+            catechist_dto = ClassDTO.from_other_obj(class_obj)
+            self.db.commit()
+            return catechist_dto, success
+        except:
+            raise
+        
+
     # --- Métodos auxiliares (podrían ser necesarios) ---
     def get_person_by_dni(self, dni: str) -> Optional[PersonDTO]:
         person_from_db = self.db.query(Person).filter_by(DNI=dni).first()
@@ -185,3 +209,6 @@ class SQLAlchemyDAL(IDataAccessLayer):
 
     def get_user_by_username(self, username: str) -> Optional[UserDTO]:
         pass
+
+    def get_class_period_by_id(self, period_id: int) -> Optional[ClassPeriodDTO]:
+        return ClassPeriodDTO.from_other_obj(self.db.query(ClassPeriod).filter_by(IDClassPeriod=period_id).one_or_none())
