@@ -79,7 +79,7 @@ class DBManager:
                     existing_instance = session.query(model_class).filter_by(**filter_conditions).one_or_none()
                     if existing_instance:
                         if model_instance.__should_raise_error_if_duplicate__ and not ignore_duplicate_error:
-                            raise DuplicateColumnException(model_class.__name__, constraint_attrs)
+                            raise DuplicateColumnException(model_class.__name__, filter_conditions)
 
                         if object_session(model_instance) == session and model_instance in session.new:
                             session.expunge(model_instance)
@@ -253,9 +253,10 @@ class DBManager:
                     session, # Pasar la sesión
                     item,
                     is_model_func_override, # Pasar el override
-                    checked_objects,
+                    ignore_duplicate_error_for=ignore_duplicate_error_for,
+                    checked_objects=checked_objects,
                     separated_objects = separated_objects,
-                    current_object=temp_current_attr_name
+                    current_object=f"{current_object}{'.' if current_object != '' else ''}{type(item).__name__}"
                 )
 
         return persisted_instance, created, conflicting_attrs

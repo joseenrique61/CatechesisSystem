@@ -24,13 +24,13 @@ def register_parish_priest():
 
             match e.table:
                 case "User":
-                    error_message = f"El usuario {parish_priest.User.Username} ya existe."
+                    error_message = f"El usuario {e.values['Username']} ya existe."
                 case "Person":
-                    match e.columns[0]:
+                    match list(e.values.keys())[0]:
                         case "DNI":
-                            error_message = f"La persona con el DNI {parish_priest.Person.DNI} ya existe."
+                            error_message = f"La persona con el DNI {e.values['DNI']} ya existe."
                         case "FirstName":
-                            error_message = f"Ya existe la persona {parish_priest.Person.FirstName} {parish_priest.Person.FirstSurname}."
+                            error_message = f"Ya existe la persona {e.values['FirstName']} {e.values['FirstSurname']}."
 
             flash(error_message, 'danger')
             return render_template('admin/register_parish_priest.html', title='Registrar Sacerdote', form=form)

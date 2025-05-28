@@ -5,6 +5,7 @@ from typing import Optional
 from app.main.data.dal.sql_server.sql_alchemy_adder import DBManager
 from app.main.data.dtos.base_dtos import *
 from app.main.data.dal.sql_server.sql_models import *
+from app.main.data.duplicate_column_exception import DuplicateColumnException
 from app.main.data.image_manager import delete_image, upload_image
 
 class SQLAlchemyDAL(IDataAccessLayer):
@@ -172,7 +173,45 @@ class SQLAlchemyDAL(IDataAccessLayer):
 
     # --- Catechizing Methods ---
     def register_catechizing(self, catechizing_data: CatechizingDTO) -> CatechizingDTO:
-        pass
+        try:
+            catechizing = Catechizing.from_other_obj(catechizing_data, include=["Parent", "Godparent", "HealthInformation.Allergy"])
+
+            new_parents = []
+            for parent in catechizing.Parent:
+                filter_conditions = [{"DNI": parent.Person.DNI}, {"FirstName": parent.Person.FirstName, "MiddleName": parent.Person.MiddleName, "FirstSurname": parent.Person.FirstSurname, "SecondSurname": parent.Person.SecondSurname}]
+                for filter_condition in filter_conditions:
+                    if (person := self.db.query(Person).filter_by(**filter_condition).one_or_none()):
+                        parent_temp = self.db.query(Parent).filter_by(IDParent=person.IDPerson).one_or_none()
+                        break
+                    else:
+                        parent_temp = parent
+                new_parents.append(parent_temp)
+            catechizing.Parent = new_parents
+
+            new_godParents = []
+            for godParent in catechizing.Godparent:
+                filter_conditions = [{"DNI": godParent.Person.DNI}, {"FirstName": godParent.Person.FirstName, "MiddleName": godParent.Person.MiddleName, "FirstSurname": godParent.Person.FirstSurname, "SecondSurname": godParent.Person.SecondSurname}]
+                for filter_condition in filter_conditions:
+                    if (person := self.db.query(Person).filter_by(**filter_condition).one_or_none()):
+                        godparent_temp = self.db.query(Godparent).filter_by(IDGodparent=person.IDPerson).one_or_none()
+                        break
+                    else:
+                        godparent_temp = godParent
+                new_godParents.append(godparent_temp)
+            catechizing.Godparent = new_godParents
+            
+            catechizing, success, _ = DBManager.get_or_create(self.db, catechizing, ignore_duplicate_error_for=["Parent", "Godparent", "Parent.Person", "Godparent.Person", "HealthInformation.EmergencyContact"])
+
+            for parent in catechizing.Parent:
+                for godparent in catechizing.Godparent:
+                    if parent.IDParent == godparent.IDGodparent:
+                        raise DuplicateColumnException("Parent", {})
+            
+            catechizing_dto = CatechizingDTO.from_other_obj(catechizing)
+            self.db.commit()
+            return catechizing_dto, success
+        except:
+            raise
 
     def get_catechizing_by_id(self, catechizing_id: int) -> Optional[CatechizingDTO]:
         pass # ID se refiere a Person.IDPerson
@@ -224,3 +263,15 @@ class SQLAlchemyDAL(IDataAccessLayer):
 
     def get_class_period_by_id(self, period_id: int) -> Optional[ClassPeriodDTO]:
         return ClassPeriodDTO.from_other_obj(self.db.query(ClassPeriod).filter_by(IDClassPeriod=period_id).one_or_none())
+    
+    def get_classes_by_parish_id(self, parish_id: int) -> List[ClassDTO]:
+        # return [ClassDTO.from_other_obj(class_data) for class_data in self.db.query(Class).filter_by()]
+        cursor = self.db.execute(text("SET NOCOUNT ON; EXEC [ClassInformation].[sp_ClassesInParish] @IDParish = :id; SET NOCOUNT OFF"), {"id": parish_id})
+        class_ids = cursor.fetchall()
+        results = []
+        for row in class_ids:
+            results.append(ClassDTO.from_other_obj(self.db.query(Class).filter_by(IDClass=row.IDClass).one_or_none(), include=["Schedule", "Schedule.DayOfTheWeek"]))
+        return results
+
+    def get_all_blood_types(self) -> List[BloodTypeDTO]:
+        return [BloodTypeDTO.from_other_obj(blood_type) for blood_type in self.db.query(BloodType).all()]

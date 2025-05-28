@@ -140,10 +140,10 @@ class SacramentDTO(BaseDTO):
     Catechizing: List['CatechizingDTO'] = []
 
 class HealthInformationDTO(BaseDTO):
-    Catechizing: Optional['CatechizingDTO'] = None
     ImportantAspects: str
     Catechizing: Optional['CatechizingDTO'] = None # La información de salud es DEL catequizando
     Allergy: List['AllergyDTO'] = []
+    IDBloodType: Optional[int] = None
     BloodType: Optional['BloodTypeDTO'] = None
     EmergencyContact: Optional['PersonDTO'] = None # La persona que es el contacto de emergencia
 
@@ -248,6 +248,7 @@ class CatechizingDTO(BaseDTO):
     SiblingsNumber: int
     ChildNumber: int
     PayedLevelCourse: bool
+    IDClass: Optional[int] = None
     Class: Optional['ClassDTO'] = None
     Person: Optional['PersonDTO'] = None
     BaptismalCertificate: Optional['BaptismalCertificateDTO'] = None

@@ -397,6 +397,7 @@ class School(BaseModel):
     __table_args__ = (
         ForeignKeyConstraint(['IDAddress'], ['LocationInformation.Address.IDAddress'], name='fk_Address_School'),
         PrimaryKeyConstraint('IDSchool', name='pk_School_IDSchool'),
+        Index('uk_School_SchoolName', 'SchoolName', unique=True),
         {'schema': 'SchoolInformation'}
     )
 
@@ -510,6 +511,7 @@ class SchoolClassYear(BaseModel):
     __table_args__ = (
         ForeignKeyConstraint(['IDSchool'], ['SchoolInformation.School.IDSchool'], name='fk_School_SchoolClassYear'),
         PrimaryKeyConstraint('IDSchoolClassYear', name='pk_SchoolYear_IDSchoolYear'),
+        Index("uk_SchoolClassYear_SchoolYear_IDSchool", "SchoolYear", "IDSchool", unique=True),
         {'schema': 'SchoolInformation'}
     )
 
@@ -642,7 +644,7 @@ class DataSheet(BaseModel):
         {'schema': 'catechesis'}
     )
 
-    IDPerson: Mapped[int] = mapped_column(Integer, primary_key=True)
+    IDCatechizing: Mapped[int] = mapped_column(Integer, primary_key=True, name="IDPerson")
 
     Catechizing: Mapped['Catechizing'] = relationship('Catechizing', back_populates='DataSheet')
     DataSheetInformation: Mapped[str] = mapped_column(Unicode(500, 'Modern_Spanish_CI_AS'))

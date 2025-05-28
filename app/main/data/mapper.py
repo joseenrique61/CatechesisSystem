@@ -66,7 +66,7 @@ class Mappable:
         return type_hint
 
     @classmethod
-    def _from_other_obj(cls: typing.Type[_T], db_obj: typing.Any, custom_var_path: str = "", current_depth: int = 0, debug = True, depth: int = -1, ignore_optional: bool = False, ignore_lists: bool = False, include: list[str] = [], exclude: list[str] = [], current_param_name: str = "") -> _T:
+    def _from_other_obj(cls: typing.Type[_T], db_obj: typing.Any, custom_var_path: str = "", current_depth: int = 0, debug = False, depth: int = -1, ignore_optional: bool = False, ignore_lists: bool = False, include: list[str] = [], exclude: list[str] = [], current_param_name: str = "") -> _T:
         if db_obj is None:
             raise ValueError(f"No se puede crear {cls.__name__} desde un objeto None.")
 

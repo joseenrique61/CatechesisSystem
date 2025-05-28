@@ -11,27 +11,29 @@ bp = Blueprint('parish_priest', __name__)
 def register_catechizing():
     form = CatechizingForm(request.form)
     if request.method == 'POST' and form.validate_on_submit():
-        catechizing = CatechizingDTO.from_other_obj(form, depth=-1, custom_var_path="data")
+        catechizing = CatechizingDTO.from_other_obj(form, depth=-1, custom_var_path="data", include=["Parent", "Godparent", "HealthInformation.Allergy"])
 
         try:
             catechizing, _ = dal.register_catechizing(catechizing)
-            # if not success:
-            #     return render_template('parish_priest/catechizing.html', title='Registrar Catequizando', form=form)
         except DuplicateColumnException as e:
             print(f"Error inserting catechizing: {e}")
 
             match e.table:
+                case "Parent":
+                    error_message = "Se ha ingresado el mismo nombre y/o DNI de un padre del catequizando en un padrino."
                 case "Person":
-                    match e.columns[0]:
+                    match list(e.values.keys())[0]:
                         case "DNI":
-                            error_message = f"La persona con el DNI {catechizing.Person.DNI} ya existe."
+                            error_message = f"La persona con el DNI {e.values['DNI']} ya existe."
                         case "FirstName":
-                            error_message = f"Ya existe la persona {catechizing.Person.FirstName} {catechizing.Person.FirstSurname}."
+                            error_message = f"Ya existe la persona {e.values['FirstName']} {e.values['FirstSurname']}."
 
             flash(error_message, 'danger')
-            # return render_template('parish_priest/catechizing.html', title='Registrar Catequizando', form=form)
+            return render_template('parish_priest/register_catechizing.html', title='Registrar Catequizando', form=form)
 
-    return render_template('parish_priest/catechizing.html', title='Registrar Catequizando', form=form)
+        flash(f'¡Catequizando {catechizing.Person.FirstName} {catechizing.Person.FirstSurname} registrado exitosamente!', 'success')
+
+    return render_template('parish_priest/register_catechizing.html', title='Registrar Catequizando', form=form)
 
 
 @bp.route('/class/create', methods=['GET', 'POST'])
@@ -74,13 +76,13 @@ def register_catechist():
 
             match e.table:
                 case "User":
-                    error_message = f"El usuario {catechist.User.Username} ya existe."
+                    error_message = f"El usuario {e.values['Username']} ya existe."
                 case "Person":
-                    match e.columns[0]:
+                    match list(e.values.keys())[0]:
                         case "DNI":
-                            error_message = f"La persona con el DNI {catechist.Person.DNI} ya existe."
+                            error_message = f"La persona con el DNI {e.values['DNI']} ya existe."
                         case "FirstName":
-                            error_message = f"Ya existe la persona {catechist.Person.FirstName} {catechist.Person.FirstSurname}."
+                            error_message = f"Ya existe la persona {e.values['FirstName']} {e.values['FirstSurname']}."
 
             flash(error_message, 'danger')
             return render_template('admin/register_parish_priest.html', title='Registrar Sacerdote', form=form)
@@ -102,13 +104,13 @@ def register_support_person():
 
             match e.table:
                 case "User":
-                    error_message = f"El usuario {support_person.User.Username} ya existe."
+                    error_message = f"El usuario {e.values['Username']} ya existe."
                 case "Person":
-                    match e.columns[0]:
+                    match list(e.values.keys())[0]:
                         case "DNI":
-                            error_message = f"La persona con el DNI {support_person.Person.DNI} ya existe."
+                            error_message = f"La persona con el DNI {e.values['DNI']} ya existe."
                         case "FirstName":
-                            error_message = f"Ya existe la persona {support_person.Person.FirstName} {support_person.Person.FirstSurname}."
+                            error_message = f"Ya existe la persona {e.values['FirstName']} {e.values['FirstSurname']}."
 
             flash(error_message, 'danger')
             return render_template('parish_priest/register_support_person.html', title='Registrar Persona de Soporte', form=form)

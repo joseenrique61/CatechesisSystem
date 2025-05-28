@@ -2,31 +2,41 @@ from wtforms import FieldList, IntegerField, StringField, TimeField, SelectField
 from wtforms.validators import DataRequired, Length, Optional, NumberRange
 from flask_wtf import FlaskForm
 from flask import session
-from app.main.forms import PersonForm
+from app.main.forms import PersonForm, AddressForm
 from app.auth.forms import UserForm
 from app import dal
 
+class SchoolForm(FlaskForm):
+    SchoolName = StringField('Nombre de la escuela', validators=[DataRequired(), Length(max=50)])
+    Address = FormField(AddressForm, label='Dirección del colegio')
+
 class SchoolClassYearForm(FlaskForm):
     SchoolYear = StringField('Año Escolar', validators=[DataRequired(), Length(max=10)])
-    IDSchool = SelectField('Escuela', validators=[DataRequired()], choices=[], coerce=int)
+    School = FormField(SchoolForm, label='Información del colegio')
 
 class AllergyForm(FlaskForm):
     Allergy = StringField('Alergia', validators=[DataRequired(), Length(max=100)])
 
 class ParentForm(FlaskForm):
     Person = FormField(PersonForm)
-    Occupation = StringField('Ocupación', validators=[DataRequired(), Length(max=100)])
+    Ocuppation = StringField('Ocupación', validators=[DataRequired(), Length(max=100)])
 
 class GodparentForm(FlaskForm):
     Person = FormField(PersonForm)
 
 class HealthInformationForm(FlaskForm):
     ImportantAspects = TextAreaField('Aspectos Importantes de Salud', validators=[Optional()])
-    Allergies = FieldList(FormField(AllergyForm), 'Alergias', min_entries=0)
+    Allergy = FieldList(FormField(AllergyForm), 'Alergias', min_entries=1)
     IDBloodType = SelectField('Tipo de Sangre', validators=[DataRequired()], choices=[], coerce=int)
     EmergencyContact = FormField(PersonForm, 'Contacto de Emergencia')
 
+    def __init__(self, *args, **kwargs):
+        super(HealthInformationForm, self).__init__(*args, **kwargs)
+        self.IDBloodType.choices = [(item.IDBloodType, item.BloodType) for item in dal.get_all_blood_types()]
+
 # --- Formulario Principal ---
+class DataSheetForm(FlaskForm):
+    DataSheetInformation = TextAreaField('Información Adicional (Ficha)', validators=[Optional()])
 
 class CatechizingForm(FlaskForm):
     Person = FormField(PersonForm, 'Datos Personales del Catequizando')
@@ -40,18 +50,23 @@ class CatechizingForm(FlaskForm):
 
     PayedLevelCourse = BooleanField('¿Curso de Nivel Pagado?', default=False)
 
-    Parents = FieldList(FormField(ParentForm), 'Padres/Tutores', min_entries=1, max_entries=2) # Al menos un padre/tutor
-    Godparents = FieldList(FormField(GodparentForm), 'Padrinos/Madrinas', min_entries=0, max_entries=2) # Padrinos pueden ser opcionales inicialmente
+    Parent = FieldList(FormField(ParentForm), 'Padres/Tutores', min_entries=1, max_entries=2) # Al menos un padre/tutor
+    Godparent = FieldList(FormField(GodparentForm), 'Padrinos/Madrinas', min_entries=1, max_entries=2) # Padrinos pueden ser opcionales inicialmente
 
     HealthInformation = FormField(HealthInformationForm, 'Información de Salud')
 
     # DataSheetCreateDTO se representa como un solo campo de texto
-    DataSheetInformation = TextAreaField('Información Adicional (Ficha)', validators=[Optional()])
+    DataSheet = FormField(DataSheetForm, label="Hoja de datos")
 
     HasParticularClass = BooleanField('¿Tomó clases particulares?', default=False)
 
     # Podrías añadir un botón de envío aquí o en la plantilla
     Submit = SubmitField('Registrar Catequizando')
+
+    def __init__(self, *args, **kwargs):
+        super(CatechizingForm, self).__init__(*args, **kwargs)
+        # TODO: Change when the login is working
+        self.IDClass.choices = [(item.IDClass, f"{item.Level.Name}: {', '.join([sch.DayOfTheWeek.DayOfTheWeek + ': ' + sch.StartHour + ' - ' + sch.EndHour for sch in item.Schedule])}") for item in dal.get_classes_by_parish_id(dal.get_parish_priest_by_id(2).IDParish)]
 
 class ScheduleForm(FlaskForm):
     IDDayOfTheWeek = SelectField('Día de la semana', coerce=int)
@@ -63,7 +78,8 @@ class ScheduleForm(FlaskForm):
         super(ScheduleForm, self).__init__(*args, **kwargs)
         self.IDDayOfTheWeek.choices = [(item.IDDayOfTheWeek, item.DayOfTheWeek) for item in dal.get_all_day_of_the_week()]
         # self.IDClassroom.choices = [(item.IDClassroom, item.ClassroomName) for item in dal.get_classroom_in_parish(dal.get_parish_priest_by_id(session.get("id")).IDParish)]
-        self.IDClassroom.choices = [(item.IDClassroom, item.ClassroomName) for item in dal.get_classroom_in_parish(dal.get_parish_priest_by_id(37).IDParish)]
+        # TODO: Change when the login is working
+        self.IDClassroom.choices = [(item.IDClassroom, item.ClassroomName) for item in dal.get_classroom_in_parish(dal.get_parish_priest_by_id(2).IDParish)]
     
     def validate_StartHour(self, field):
         if field.data:

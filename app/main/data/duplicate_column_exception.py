@@ -1,5 +1,5 @@
 class DuplicateColumnException(Exception):
-    def __init__(self, table: str, columns: list[str]):
-        super().__init__(f"Duplicate column on {table}: {columns}")
+    def __init__(self, table: str, values: dict[str, object]):
+        super().__init__(f"Duplicate column(s) on {table}: {values.keys()}")
         self.table = table
-        self.columns = columns
+        self.values = values

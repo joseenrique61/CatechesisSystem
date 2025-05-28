@@ -108,6 +108,10 @@ class IDataAccessLayer(ABC):
     @abstractmethod
     def get_blood_type_by_id(self, blood_type_id: int) -> Optional[BloodTypeDTO]:
         pass
+
+    @abstractmethod
+    def get_all_blood_types(self) -> List[BloodTypeDTO]:
+        pass
     
     @abstractmethod
     def get_phone_number_type_by_id(self, phone_number_type_id: int) -> Optional[PhoneNumberTypeDTO]:
@@ -155,4 +159,8 @@ class IDataAccessLayer(ABC):
 
     @abstractmethod
     def register_support_person(self, support_person_data: SupportPersonDTO) -> SupportPersonDTO:
+        pass
+
+    @abstractmethod
+    def get_classes_by_parish_id(self, parish_id: int) -> List[ClassDTO]:
         pass
