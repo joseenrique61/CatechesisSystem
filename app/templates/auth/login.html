@@ -1,22 +1,102 @@
 {% extends "base.html" %}
 
+{% block title %}{{ title if title else "Iniciar Sesión" }}{% endblock %}
+
+{% block head_extra %}
+<style>
+    .login-container {
+        min-height: 80vh; /* Para centrar verticalmente */
+        display: flex;
+        align-items: center;
+    }
+    .login-card {
+        max-width: 400px;
+        width: 100%;
+    }
+    .login-card .card-header {
+        /* background-color: #0d6efd; */ /* Color primario de Bootstrap */
+        /* color: white; */
+        text-align: center;
+        padding-top: 1.5rem;
+        padding-bottom: 1rem; /* Más espacio para el título */
+    }
+    .login-card .card-header h3 {
+        margin-bottom: 0;
+    }
+    .login-card .card-body {
+        padding: 2rem;
+    }
+    .brand-logo { /* Si tienes un logo */
+        display: block;
+        margin: 0 auto 1rem auto;
+        max-width: 100px; /* Ajusta según tu logo */
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-6 col-lg-4">
-        <div class="card shadow-sm">
-            <div class="card-body">
-                <h2 class="card-title text-center mb-4">{{ title }}</h2>
-                <form method="post">
-                    <div class="mb-3">
-                        <label for="username" class="form-label">Usuario</label>
-                        <input type="text" class="form-control" id="username" name="username" required autofocus>
-                    </div>
-                    <div class="mb-3">
-                        <label for="password" class="form-label">Contraseña</label>
-                        <input type="password" class="form-control" id="password" name="password" required>
-                    </div>
-                    <button type="submit" class="btn btn-primary w-100">Ingresar</button>
-                </form>
+<div class="container login-container">
+    <div class="row justify-content-center w-100">
+        <div class="col-md-6 col-lg-5 col-xl-4">
+            <div class="card shadow-lg login-card">
+                <div class="card-header bg-primary text-white">
+                    {# Opcional: Logo #}
+                    {# <img src="{{ url_for('static', filename='images/logo_catequesis.png') }}" alt="Logo Catequesis" class="brand-logo"> #}
+                    <h3 class="fw-bold">{{ title if title else "Iniciar Sesión" }}</h3>
+                    <p class="mb-0 small">Sistema de Catequesis</p>
+                </div>
+                <div class="card-body">
+                    {# Mostrar mensajes flash (ej. "Credenciales incorrectas") #}
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category if category != 'message' else 'danger' }} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <form method="POST" novalidate>
+                        {{ form.hidden_tag() }} {# CSRF token #}
+
+                        <div class="mb-3">
+                            {{ form.Username.label(class="form-label") }}
+                            {{ form.Username(class="form-control form-control-lg" + (" is-invalid" if form.Username.errors else ""), placeholder="Ingrese su usuario") }}
+                            {% if form.Username.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.Username.errors %}<span>{{ error }}</span><br>{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.Password.label(class="form-label") }}
+                            {{ form.Password(class="form-control form-control-lg" + (" is-invalid" if form.Password.errors else ""), placeholder="Ingrese su contraseña") }}
+                            {% if form.Password.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.Password.errors %}<span>{{ error }}</span><br>{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        {# Opcional: Checkbox "Recordarme" (necesita lógica en el backend) #}
+                        {# <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="rememberMe">
+                            <label class="form-check-label" for="rememberMe">Recordarme</label>
+                        </div> #}
+
+                        <div class="d-grid mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-sign-in-alt"></i> Ingresar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                {# <div class="card-footer text-center py-3">
+                    <small class="text-muted">Parroquia XYZ - Quito, Ecuador</small>
+                </div> #}
             </div>
         </div>
     </div>

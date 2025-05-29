@@ -12,13 +12,13 @@ def index():
 
 @bp.route('/dashboard')
 def dashboard():
-    if 'user_id' not in session:
+    if 'id' not in session:
         flash('Debes iniciar sesión para ver esta página.', 'warning')
         return redirect(url_for('auth.login'))
 
-    # Aquí podrías cargar datos específicos del usuario o globales para el dashboard
-    username = session.get('username', 'Invitado')
-    role = session.get('role', 'Desconocido')
-
-    # Pasa datos a la plantilla
-    return render_template('main/dashboard.html', title='Dashboard', username=username, role=role)
+    match session["role"]:
+        case "ParishPriest":
+            return redirect(url_for("parish_priest.dashboard"))
+        case "Admin":
+            return redirect(url_for("admin.dashboard"))
+            

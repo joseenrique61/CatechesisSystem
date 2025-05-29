@@ -330,3 +330,20 @@ class SQLAlchemyDAL(IDataAccessLayer):
 
     def get_all_blood_types(self) -> List[BloodTypeDTO]:
         return [BloodTypeDTO.from_other_obj(blood_type) for blood_type in self.db.query(BloodType).all()]
+
+    def check_user_login(self, user_data: UserDTO) -> bool:
+        if (user := self.db.query(User).filter_by(Username=user_data.Username).one_or_none()) is None:
+            return False
+        if not user.check_password(user_data.Password):
+            return False
+        return True
+
+    def get_dto_by_user(self, username: int):
+        user = self.db.query(User).filter_by(Username=username).one_or_none()
+        if user.Administrator:
+            return AdministratorDTO.from_other_obj(self.db.query(Administrator).filter_by(IDUser=user.IDUser).one_or_none())
+        elif user.Catechist:
+            return CatechistDTO.from_other_obj(self.db.query(Catechist).filter_by(IDUser=user.IDUser).one_or_none())
+        elif user.ParishPriest:
+            pp = self.db.query(ParishPriest).filter_by(IDUser=user.IDUser).one_or_none()
+            return ParishPriestDTO.from_other_obj(pp)

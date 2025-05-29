@@ -8,6 +8,16 @@ from app import dal
 class RoleForm(Form):
     Role = StringField("")
 
+class LoginForm(FlaskForm):
+    Username = StringField('Nombre de usuario', [validators.Length(min=1, max=100)])
+    Password = PasswordField('Contraseña', [
+            validators.DataRequired(),
+            validators.Length(min=1, max=100)])
+
+    # def validate_Password(self, field):
+    #     if field.data:
+    #         field.data = generate_password_hash(field.data)
+
 class UserForm(Form):
     Username = StringField('Nombre de usuario', [validators.Length(min=1, max=100)])
     Password = PasswordField('Contraseña', [

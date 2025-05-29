@@ -1,37 +1,51 @@
 from flask import Blueprint, render_template, flash, redirect, url_for, request, session
-from app import db
-from app.main.data.dal.sql_server.sql_models import User # Importa tu modelo de usuario adaptado
+from app import dal
+from app.auth.forms import LoginForm
+from app.main.data.dtos.base_dtos import UserDTO, ParishPriestDTO, CatechistDTO, AdministratorDTO
 
 bp = Blueprint('auth', __name__) # No necesita url_prefix aquí, se define al registrar
 
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
-    if 'user_id' in session:
-        return redirect(url_for('main.dashboard')) # Redirige al dashboard si ya está logueado
+    if 'role' in session:
+        match session['role']:
+            case "ParishPriest":
+                return redirect(url_for("parish_priest.dashboard"))
+            case "Admin":
+                return redirect(url_for("admin.dashboard"))
 
-    if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-        error = None
-        user = User.query.filter_by(Username=username).first()
+    form = LoginForm(request.form)
 
-        if user is None:
-            error = 'Nombre de usuario incorrecto.'
-        elif not user.check_password(password): # Usa el método del modelo
-            error = 'Contraseña incorrecta.'
+    if request.method == 'POST' and form.validate():
+        user = UserDTO.from_other_obj(form, custom_var_path="data")
 
-        if error is None:
-            # Inicio de sesión exitoso
-            session.clear()
-            session['user_id'] = user.IDUser
-            session['username'] = user.Username
-            # session['role'] = user.role
-            flash(f'Bienvenido {user.Username}!', 'success')
-            return redirect(url_for('main.dashboard')) # Ir al dashboard después de login
-        else:
-            flash(error, 'danger')
+        if not dal.check_user_login(user):
+            flash("Usuario y/o contraseña incorrectos", "danger")
+            return render_template('auth/login.html', form=form, title='Iniciar Sesión')
 
-    return render_template('auth/login.html', title='Iniciar Sesión')
+        # Inicio de sesión exitoso
+        session.clear()
+        
+        user_type = dal.get_dto_by_user(user.Username)
+        if type(user_type) is ParishPriestDTO:
+            user_id = user_type.IDParishPriest
+            role = "ParishPriest" 
+        elif type(user_type) is CatechistDTO:
+            user_id = user_type.IDCatechist
+            role = "Catechist"
+        elif type(user_type) is AdministratorDTO:
+            user_id = user.IDUser
+            role = "Admin"
+
+        session['id'] = user_id
+        session['role'] = role
+
+        print(session)
+        
+        flash(f'Bienvenido {user.Username}!', 'success')
+        return redirect(url_for('main.dashboard')) # Ir al dashboard después de login
+
+    return render_template('auth/login.html', form=form, title='Iniciar Sesión')
 
 @bp.route('/logout')
 def logout():
