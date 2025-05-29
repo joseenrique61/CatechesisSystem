@@ -9,6 +9,67 @@
     </div>
 </div>
 
+<!-- Sección Parroquias -->
+<div class="card shadow mb-4">
+    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+        <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-church"></i> Parroquias</h6>
+        <a href="{{ url_for('admin.register_parish') }}" class="btn btn-success btn-sm"><i class="fas fa-plus"></i> Añadir Parroquia</a>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped table-hover" id="parishesTable" width="100%" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Dirección</th>
+                        <th>Párroco Asignado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for parish in parishes %}
+                    <tr>
+                        <td>{{ parish.Name }}</td>
+                        <td>
+                            {% if parish.Address %}
+                                {{ parish.Address.MainStreet }} N° {{ parish.Address.Number }}
+                                {% if parish.Address.SecondStreet %}
+                                    y {{ parish.Address.SecondStreet }}
+                                {% endif %}
+                                <br>
+                                <small>
+                                {% if parish.Address.Location %}
+                                    {{ parish.Address.Location.Province if parish.Address.Location.Province else '' }}
+                                    {% if parish.Address.Location.State %}, {{ parish.Address.Location.State }}{% endif %}
+                                    {% if parish.Address.Location.Country %}, {{ parish.Address.Location.Country }}{% endif %}
+                                {% else %}
+                                    Ubicación no especificada
+                                {% endif %}
+                                </small>
+                            {% else %}
+                                Dirección no especificada
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if parish.ParishPriest and parish.ParishPriest.Person %}
+                                {{ parish.ParishPriest.Person.FirstName }} {{ parish.ParishPriest.Person.FirstSurname }}
+                            {% elif parish.ParishPriest and parish.ParishPriest.User %}
+                                (Usuario: {{ parish.ParishPriest.User.Username }})
+                            {% else %}
+                                No asignado
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center">No hay parroquias registradas.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
 <!-- Sección Párrocos -->
 <div class="card shadow mb-4">
     <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">

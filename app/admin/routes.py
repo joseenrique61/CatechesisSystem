@@ -11,7 +11,7 @@ bp = Blueprint('admin', __name__)
 # TODO: Login required decorator
 @bp.route('/dashboard', methods=['GET'])
 def dashboard():
-    return render_template("admin/dashboard.html", title="Dashboard del Administrador", parish_priests=dal.get_all_parish_priests(), catechists=dal.get_all_catechists())
+    return render_template("admin/dashboard.html", title="Dashboard del Administrador", parish_priests=dal.get_all_parish_priests(), catechists=dal.get_all_catechists(), parishes=dal.get_all_parishes(include=["ParishPriest.Person"]))
 
 @bp.route('/parish_priest/create', methods=['GET', 'POST'])
 def register_parish_priest():

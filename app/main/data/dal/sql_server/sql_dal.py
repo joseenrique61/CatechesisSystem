@@ -105,8 +105,8 @@ class SQLAlchemyDAL(IDataAccessLayer):
     def get_parish_by_id(self, parish_id: int) -> Optional[ParishDTO]:
         return ParishDTO.from_other_obj(self.db.query(Parish).filter_by(IDParish=parish_id).first())
 
-    def get_all_parishes(self) -> List[ParishDTO]:
-        return [ParishDTO.from_other_obj(parish, exclude=["Address.Location.Person"]) for parish in self.db.query(Parish).all()]
+    def get_all_parishes(self, include: list[str]) -> List[ParishDTO]:
+        return [ParishDTO.from_other_obj(parish, include=include, exclude=["Address.Location.Person"]) for parish in self.db.query(Parish).all()]
 
     def update_parish(self, parish_id: int, parish_data: ParishDTO) -> Optional[ParishDTO]:
         pass

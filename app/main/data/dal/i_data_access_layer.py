@@ -13,7 +13,7 @@ class IDataAccessLayer(ABC):
         pass
 
     @abstractmethod
-    def get_all_parishes(self) -> List[ParishDTO]:
+    def get_all_parishes(self, include: list[str]) -> List[ParishDTO]:
         pass
 
     @abstractmethod
