@@ -1,25 +1,254 @@
 {% extends "base.html" %}
 
+{% block title %}{{ title if title else "Registrar Nueva Clase" }}{% endblock %}
+
+{% block head_extra %}
+<style>
+    .schedule-entry {
+        border: 1px solid #e0e0e0;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-radius: 0.25rem;
+        background-color: #f9f9f9;
+    }
+    .schedule-entry .row > div {
+        margin-bottom: 0.5rem; /* Espacio entre campos dentro de una fila de horario */
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-md-10 col-lg-10">
-        <div class="card shadow-sm">
+    <div class="col-md-10 col-lg-8">
+        <div class="card shadow">
+            <div class="card-header">
+                <h3 class="card-title">{{ title if title else "Registrar Nueva Clase" }}</h3>
+            </div>
             <div class="card-body">
-                <h2 class="card-title text-center mb-4">{{ title }}</h2>
-                {% from "_form_helpers.html" import render_field %}
-                <form method=post>
-                    {% for field in form %}
-                        {% if field.type == 'FormField' %}
-                            {% for field1 in field %}
-                                {{ render_field(field1) }}
+                <form method="POST" novalidate>
+                    {{ form.hidden_tag() }} {# CSRF token #}
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            {{ form.IDClassPeriod.label(class="form-label") }}
+                            {{ form.IDClassPeriod(class="form-select" + (" is-invalid" if form.IDClassPeriod.errors else "")) }}
+                            {% if form.IDClassPeriod.errors %}<div class="invalid-feedback">{% for e in form.IDClassPeriod.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            {{ form.IDLevel.label(class="form-label") }}
+                            {{ form.IDLevel(class="form-select" + (" is-invalid" if form.IDLevel.errors else "")) }}
+                            {% if form.IDLevel.errors %}<div class="invalid-feedback">{% for e in form.IDLevel.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            {{ form.IDCatechist.label(class="form-label") }}
+                            {{ form.IDCatechist(class="form-select" + (" is-invalid" if form.IDCatechist.errors else "")) }}
+                            {% if form.IDCatechist.errors %}<div class="invalid-feedback">{% for e in form.IDCatechist.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            {{ form.IDSupportPerson.label(class="form-label") }}
+                            {{ form.IDSupportPerson(class="form-select" + (" is-invalid" if form.IDSupportPerson.errors else "")) }}
+                            {% if form.IDSupportPerson.errors %}<div class="invalid-feedback">{% for e in form.IDSupportPerson.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
+                        </div>
+                    </div>
+
+                    {# --- Sección Horarios --- #}
+                    <fieldset class="mb-3 border p-3">
+                        <legend class="w-auto px-2 h6">{{ form.Schedule.label.text }}</legend>
+                        <div id="schedule-list">
+                            {% for schedule_field_entry in form.Schedule %}
+                            {# schedule_field_entry es un FormField que envuelve una instancia de ScheduleForm #}
+                            {% set schedule_subform = schedule_field_entry.form %}
+                            <div class="schedule-entry" id="schedule-{{ loop.index0 }}">
+                                <div class="row align-items-center">
+                                    <div class="col-md-4">
+                                        {{ schedule_subform.IDDayOfTheWeek.label(class="form-label sr-only") }} {# sr-only si el select ya lo dice #}
+                                        {{ schedule_subform.IDDayOfTheWeek(class="form-select form-select-sm" + (" is-invalid" if schedule_subform.IDDayOfTheWeek.errors else "")) }}
+                                        {% if schedule_subform.IDDayOfTheWeek.errors %}<div class="invalid-feedback d-block">{% for e in schedule_subform.IDDayOfTheWeek.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
+                                    </div>
+                                    <div class="col-md-2">
+                                        {{ schedule_subform.StartHour.label(class="form-label sr-only") }}
+                                        {{ schedule_subform.StartHour(class="form-control form-control-sm" + (" is-invalid" if schedule_subform.StartHour.errors else "")) }}
+                                        {% if schedule_subform.StartHour.errors %}<div class="invalid-feedback d-block">{% for e in schedule_subform.StartHour.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
+                                    </div>
+                                    <div class="col-md-2">
+                                        {{ schedule_subform.EndHour.label(class="form-label sr-only") }}
+                                        {{ schedule_subform.EndHour(class="form-control form-control-sm" + (" is-invalid" if schedule_subform.EndHour.errors else "")) }}
+                                        {% if schedule_subform.EndHour.errors %}<div class="invalid-feedback d-block">{% for e in schedule_subform.EndHour.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
+                                    </div>
+                                    <div class="col-md-3"> {# Para el aula #}
+                                        {{ schedule_subform.IDClassroom.label(class="form-label sr-only") }}
+                                        {{ schedule_subform.IDClassroom(class="form-select form-select-sm" + (" is-invalid" if schedule_subform.IDClassroom.errors else "")) }}
+                                        {% if schedule_subform.IDClassroom.errors %}<div class="invalid-feedback d-block">{% for e in schedule_subform.IDClassroom.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
+                                    </div>
+                                    <div class="col-md-1">
+                                        <button type="button" class="btn btn-danger btn-sm remove-schedule" {% if loop.first and form.Schedule.min_entries >= 1 %}disabled{% endif %}>
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                {{ schedule_subform.csrf_token }} {# Si ScheduleForm fuera FlaskForm, necesitaría esto. Con wtforms.Form no. #}
+                            </div>
                             {% endfor %}
-                        {% else %}
-                            {{ render_field(field) }}
-                        {% endif %}
-                    {% endfor %}
+                        </div>
+                        <button type="button" id="add-schedule" class="btn btn-outline-success btn-sm mt-2">
+                            <i class="fas fa-plus"></i> Añadir Horario
+                        </button>
+                    </fieldset>
+                    
+                    <div class="d-grid">
+                        {{ form.Submit(class="btn btn-primary btn-lg") }}
+                    </div>
                 </form>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts_extra %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const addScheduleButton = document.getElementById('add-schedule');
+    const scheduleList = document.getElementById('schedule-list');
+    const minEntries = parseInt("{{ form.Schedule.min_entries }}", 10) || 0;
+
+    // --- Plantilla para nuevos horarios ---
+    // Tomamos el HTML del primer elemento como plantilla base
+    // Es crucial que esta plantilla sea lo más "limpia" posible de valores y errores
+    let scheduleTemplateHtml = '';
+    const firstScheduleEntry = scheduleList.querySelector('.schedule-entry');
+
+    if (firstScheduleEntry) {
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = firstScheduleEntry.outerHTML; // Clonar el primer elemento
+        
+        // Limpiar valores y errores de los campos del clon
+        tempDiv.querySelectorAll('select, input[type="time"]').forEach(field => {
+            if (field.tagName === 'SELECT') {
+                field.selectedIndex = 0; // Resetear select
+            } else {
+                field.value = ''; // Limpiar valor de input
+            }
+            field.classList.remove('is-invalid');
+        });
+        tempDiv.querySelectorAll('.invalid-feedback.d-block').forEach(errorDiv => {
+            errorDiv.innerHTML = ''; // Limpiar mensajes de error
+        });
+        
+        scheduleTemplateHtml = tempDiv.firstElementChild.outerHTML; // Usar el outerHTML del clon limpio
+    } else if (minEntries > 0) {
+        // Fallback: si no hay elementos renderizados pero min_entries > 0
+        // Esto es menos ideal porque la plantilla debe coincidir exactamente con lo que genera WTForms
+        // incluyendo las CHOICES de los selects, que no podemos replicar fácilmente aquí sin pasarlas explícitamente.
+        // Lo ideal es que WTForms SIEMPRE renderice min_entries.
+        // Si este es el caso, la mejor solución es asegurar que la ruta pase las choices a la plantilla
+        // para construir una plantilla JS más precisa.
+        // Por ahora, un placeholder muy básico que requerirá que las choices se carguen dinámicamente
+        // en el lado del servidor para estos nuevos elementos (lo cual es más complejo con FieldList).
+        // LA MEJOR PRÁCTICA ES QUE WTFORMS RENDERICE `min_entries` EN EL SERVIDOR.
+        console.warn("No se encontró una entrada de horario inicial para usar como plantilla, y min_entries > 0. La adición dinámica puede no tener las opciones correctas en los selects.");
+        const placeholderIndex = '__INDEX__';
+        scheduleTemplateHtml = `
+            <div class="schedule-entry" id="schedule-${placeholderIndex}">
+                <div class="row align-items-center">
+                    <div class="col-md-4">
+                        <select class="form-select form-select-sm" id="Schedule-${placeholderIndex}-IDDayOfTheWeek" name="Schedule-${placeholderIndex}-IDDayOfTheWeek"><option value="">Seleccione día...</option></select>
+                    </div>
+                    <div class="col-md-2">
+                        <input class="form-control form-control-sm" id="Schedule-${placeholderIndex}-StartHour" name="Schedule-${placeholderIndex}-StartHour" type="time">
+                    </div>
+                    <div class="col-md-2">
+                        <input class="form-control form-control-sm" id="Schedule-${placeholderIndex}-EndHour" name="Schedule-${placeholderIndex}-EndHour" type="time">
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select form-select-sm" id="Schedule-${placeholderIndex}-IDClassroom" name="Schedule-${placeholderIndex}-IDClassroom"><option value="">Seleccione aula...</option></select>
+                    </div>
+                    <div class="col-md-1">
+                        <button type="button" class="btn btn-danger btn-sm remove-schedule"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>
+            </div>`;
+    }
+
+
+    function updateRemoveButtons() {
+        const scheduleEntries = scheduleList.querySelectorAll('.schedule-entry');
+        scheduleEntries.forEach((entry) => {
+            const removeButton = entry.querySelector('.remove-schedule');
+            if (removeButton) {
+                removeButton.disabled = scheduleEntries.length <= minEntries;
+            }
+        });
+    }
+
+    function reindexScheduleEntries() {
+        const currentEntries = scheduleList.querySelectorAll(".schedule-entry");
+        currentEntries.forEach((entry, index) => {
+            entry.id = `schedule-${index}`; // Actualizar ID del contenedor del horario
+
+            // Actualizar IDs y names de todos los campos dentro de esta entrada de horario
+            entry.querySelectorAll('select, input').forEach(field => {
+                const oldId = field.id;
+                const oldName = field.name;
+                if (oldId) {
+                    field.id = oldId.replace(/Schedule-\d+-/, `Schedule-${index}-`);
+                }
+                if (oldName) {
+                    field.name = oldName.replace(/Schedule-\d+-/, `Schedule-${index}-`);
+                }
+            });
+        });
+    }
+    
+    if (addScheduleButton && scheduleList) {
+        if (!scheduleTemplateHtml && minEntries > 0) {
+             // Si no hay plantilla y se espera una, es un problema para la adición dinámica precisa
+             // de los selects. Considera enviar las choices de los selects de ScheduleForm a la plantilla JS.
+            console.error("Plantilla de horario no disponible para la adición dinámica. Los nuevos horarios pueden no tener las opciones correctas en los selectores.");
+            // Podrías deshabilitar el botón de añadir si la plantilla no está disponible.
+            // addScheduleButton.disabled = true; 
+        }
+
+        addScheduleButton.addEventListener('click', function () {
+            if (!scheduleTemplateHtml) return; // No hacer nada si no hay plantilla
+
+            const newIndex = scheduleList.children.length;
+            let newEntryHtml = scheduleTemplateHtml;
+
+            // Reemplazar el índice placeholder o el índice 0 de la plantilla
+            newEntryHtml = newEntryHtml.replace(/__INDEX__/g, newIndex) // Si usas el placeholder
+                                      .replace(/Schedule-0-/g, `Schedule-${newIndex}-`)
+                                      .replace(/id="schedule-0"/g, `id="schedule-${newIndex}"`);
+            
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = newEntryHtml;
+            const newScheduleElement = tempDiv.firstElementChild;
+            scheduleList.appendChild(newScheduleElement);
+            
+            reindexScheduleEntries();
+            updateRemoveButtons();
+        });
+
+        scheduleList.addEventListener('click', function (event) {
+            const removeButton = event.target.closest('.remove-schedule');
+            if (removeButton) {
+                if (scheduleList.children.length > minEntries) {
+                    removeButton.closest('.schedule-entry').remove();
+                    reindexScheduleEntries();
+                    updateRemoveButtons();
+                }
+            }
+        });
+
+        // Estado inicial de los botones y reindexación
+        updateRemoveButtons();
+        if(scheduleList.children.length > 0) {
+            reindexScheduleEntries();
+        }
+    }
+});
+</script>
 {% endblock %}
