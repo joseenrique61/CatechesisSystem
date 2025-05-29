@@ -39,6 +39,7 @@ def login():
 
         session['id'] = user_id
         session['role'] = role
+        session['username'] = user.Username
 
         print(session)
         

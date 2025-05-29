@@ -19,11 +19,12 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
-                    {% if 'user_id' in session %}
+                <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-center">
+                    {% if 'id' in session %}
                         <li class="nav-item">
-                            <span class="navbar-text me-3">
-                                Usuario: {{ session.username }} ({{ session.role }})
+                            <span class="navbar-text text-white me-3"> 
+                                <i class="fas fa-user-circle me-1"></i>
+                                {{ session.username }} (Rol: {{ session.role }})
                             </span>
                         </li>
                         <li class="nav-item">
