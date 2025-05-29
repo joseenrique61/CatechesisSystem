@@ -56,7 +56,7 @@ class IDataAccessLayer(ABC):
         pass # ID se refiere a Person.IDPerson
 
     @abstractmethod
-    def get_all_catechists(self) -> List[CatechistDTO]:
+    def get_all_catechists(self, include: list[str] = []) -> List[CatechistDTO]:
         pass
 
     @abstractmethod
@@ -81,7 +81,7 @@ class IDataAccessLayer(ABC):
         pass
 
     @abstractmethod
-    def get_all_catechizings(self) -> List[CatechizingDTO]:
+    def get_all_catechizings(self, include: list[str] = []) -> List[CatechizingDTO]:
         pass
 
     @abstractmethod

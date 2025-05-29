@@ -162,8 +162,8 @@ class SQLAlchemyDAL(IDataAccessLayer):
     def get_catechist_by_id(self, catechist_id: int) -> Optional[CatechistDTO]:
         pass # ID se refiere a Person.IDPerson
 
-    def get_all_catechists(self) -> List[CatechistDTO]:
-        return [CatechistDTO.from_other_obj(catechist) for catechist in self.db.query(Catechist).all()]
+    def get_all_catechists(self, include: list[str] = []) -> List[CatechistDTO]:
+        return [CatechistDTO.from_other_obj(catechist, include=include) for catechist in self.db.query(Catechist).all()]
 
     def update_catechist(self, catechist_id: int, catechist_data: CatechistDTO) -> Optional[CatechistDTO]:
         pass
@@ -219,8 +219,8 @@ class SQLAlchemyDAL(IDataAccessLayer):
     def get_catechizings_by_class(self, class_id: int) -> List[CatechizingDTO]:
         pass
 
-    def get_all_catechizings(self) -> List[CatechizingDTO]:
-        pass
+    def get_all_catechizings(self, include: list[str] = []) -> List[CatechizingDTO]:
+        return [CatechizingDTO.from_other_obj(catechizing, include=include) for catechizing in self.db.query(Catechizing).all()]
 
     def update_catechizing(self, catechizing_id: int, catechizing_data: CatechizingDTO) -> Optional[CatechizingDTO]:
         try:
@@ -268,7 +268,10 @@ class SQLAlchemyDAL(IDataAccessLayer):
             raise
 
     def delete_catechizing(self, catechizing_id: int) -> bool:
-        pass
+        catechizing = self.db.query(Catechizing).filter_by(IDCatechizing=catechizing_id).one_or_none()
+        self.db.delete(catechizing)
+        self.db.commit()
+        return True
 
     # --- Métodos de support person ---
     def register_support_person(self, support_person_data: SupportPersonDTO) -> SupportPersonDTO:

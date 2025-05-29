@@ -599,17 +599,17 @@ class Catechizing(BaseModel):
     PayedLevelCourse: Mapped[bool] = mapped_column(Boolean)
 
     Class: Mapped['Class'] = relationship('Class', back_populates='Catechizing')
-    Person: Mapped['Person'] = relationship('Person', back_populates='Catechizing')
-    BaptismalCertificate: Mapped['BaptismalCertificate'] = relationship('BaptismalCertificate', back_populates='Catechizing')
-    DataSheet: Mapped['DataSheet'] = relationship('DataSheet', back_populates='Catechizing')
-    HealthInformation: Mapped['HealthInformation'] = relationship('HealthInformation', back_populates='Catechizing', foreign_keys=[HealthInformation.IDCatechizing])
+    Person: Mapped['Person'] = relationship('Person', back_populates='Catechizing', cascade="all, delete")
+    BaptismalCertificate: Mapped['BaptismalCertificate'] = relationship('BaptismalCertificate', back_populates='Catechizing', cascade="all, delete")
+    DataSheet: Mapped['DataSheet'] = relationship('DataSheet', back_populates='Catechizing', cascade="all, delete")
+    HealthInformation: Mapped['HealthInformation'] = relationship('HealthInformation', back_populates='Catechizing', foreign_keys=[HealthInformation.IDCatechizing], cascade="all, delete")
     SchoolClassYear: Mapped['SchoolClassYear'] = relationship('SchoolClassYear', back_populates='Catechizing')
     Sacrament: Mapped[List['Sacrament']] = relationship('Sacrament', secondary='catechesis.CatechizingSacrament', back_populates='Catechizing')
     Godparent: Mapped[List['Godparent']] = relationship('Godparent', secondary='person.CatechizingGodparent', back_populates='Catechizing')
     Parent: Mapped[List['Parent']] = relationship('Parent', secondary='person.CatechizingParent', back_populates='Catechizing')
-    LevelCertificate: Mapped[List['LevelCertificate']] = relationship('LevelCertificate', back_populates='Catechizing')
-    AttendedClass: Mapped[List['AttendedClass']] = relationship('AttendedClass', back_populates='Catechizing')
-    ParticularClass: Mapped[List['ParticularClass']] = relationship('ParticularClass', back_populates='Catechizing')
+    LevelCertificate: Mapped[List['LevelCertificate']] = relationship('LevelCertificate', back_populates='Catechizing', cascade="all, delete")
+    AttendedClass: Mapped[List['AttendedClass']] = relationship('AttendedClass', back_populates='Catechizing', cascade="all, delete")
+    ParticularClass: Mapped[List['ParticularClass']] = relationship('ParticularClass', back_populates='Catechizing', cascade="all, delete")
 
 
 

@@ -2,11 +2,17 @@ from flask import Blueprint, render_template, request, session, redirect, url_fo
 from app.main.data.duplicate_column_exception import DuplicateColumnException
 from app.parish_priest.forms import CatechizingForm, CatechizingUpdateForm, ClassForm, CatechistForm, SupportPersonForm
 from app.main.data.dtos.base_dtos import CatechizingDTO, ClassDTO, CatechistDTO, SupportPersonDTO
+from app.parish_priest.helpers import calculate_age
 from app import dal
 
 bp = Blueprint('parish_priest', __name__)
 
 # TODO: Login required decorator
+@bp.route("/dashboard", methods=["GET"])
+def dashboard():
+    return render_template("parish_priest/dashboard.html", title="Dashboard del párroco", catechizings=dal.get_all_catechizings(include=["Class", "Class.Level"]), catechists=dal.get_all_catechists(include=["Class", "Class.Level"]), calculate_age=calculate_age)
+
+
 @bp.route('/catechizing/create', methods=['GET', 'POST'])
 def register_catechizing():
     form = CatechizingForm(request.form)
@@ -69,6 +75,11 @@ def update_catechizing(id: int):
         flash(f'¡Catequizando {catechizing.Person.FirstName} {catechizing.Person.FirstSurname} actualizado exitosamente!', 'success')
 
     return render_template('parish_priest/update_catechizing.html', title='Actualizar Catequizando', form=form)
+
+@bp.route('/catechizing/delete/<id>', methods=['POST'])
+def delete_catechizing(id):
+    dal.delete_catechizing(id)
+    return redirect(url_for("parish_priest.dashboard"))
 
 @bp.route('/class/create', methods=['GET', 'POST'])
 def register_class():
