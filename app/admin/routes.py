@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, request, session, redirect, url_for, flash
+from app.auth.authentication import login_required
 from app.auth.forms import ParishPriestForm
 from app.main.data.duplicate_column_exception import DuplicateColumnException
 from app.main.forms import ParishForm
@@ -8,12 +9,13 @@ from app.parish_priest.forms import CatechistForm
 
 bp = Blueprint('admin', __name__)
 
-# TODO: Login required decorator
 @bp.route('/dashboard', methods=['GET'])
+@login_required("Admin")
 def dashboard():
     return render_template("admin/dashboard.html", title="Dashboard del Administrador", parish_priests=dal.get_all_parish_priests(), catechists=dal.get_all_catechists(), parishes=dal.get_all_parishes(include=["ParishPriest.Person"]))
 
 @bp.route('/parish_priest/create', methods=['GET', 'POST'])
+@login_required("Admin")
 def register_parish_priest():
     form = ParishPriestForm(request.form)
     if request.method == 'POST' and form.validate_on_submit():
@@ -48,6 +50,7 @@ def register_parish_priest():
 
 
 @bp.route('/catechist/create', methods=['GET', 'POST'])
+@login_required("Admin")
 def register_catechist():
     form = CatechistForm(request.form)
     if request.method == 'POST' and form.validate_on_submit():
@@ -78,6 +81,7 @@ def register_catechist():
     return render_template('admin/register_catechist.html', title='Registrar Catequista', form=form)
 
 @bp.route('/parish/create', methods=['GET', 'POST'])
+@login_required("Admin")
 def register_parish():
     form = ParishForm()
     if request.method == 'POST' and form.validate_on_submit():

@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, flash, redirect, url_for, request, session
 from app import dal
+from app.auth.authentication import login_required
 from app.auth.forms import LoginForm
 from app.main.data.dtos.base_dtos import UserDTO, ParishPriestDTO, CatechistDTO, AdministratorDTO
 
@@ -49,6 +50,7 @@ def login():
     return render_template('auth/login.html', form=form, title='Iniciar Sesión')
 
 @bp.route('/logout')
+@login_required()
 def logout():
     session.clear()
     flash('Has cerrado sesión.', 'info')

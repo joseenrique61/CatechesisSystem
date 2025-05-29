@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, request, session, redirect, url_for, flash
+from app.auth.authentication import login_required
 from app.main.data.duplicate_column_exception import DuplicateColumnException
 from app.parish_priest.forms import CatechizingForm, CatechizingUpdateForm, ClassForm, SupportPersonForm
 from app.main.data.dtos.base_dtos import CatechizingDTO, ClassDTO, SupportPersonDTO
@@ -7,8 +8,8 @@ from app import dal
 
 bp = Blueprint('parish_priest', __name__)
 
-# TODO: Login required decorator
 @bp.route("/dashboard", methods=["GET"])
+@login_required("ParishPriest")
 def dashboard():
     parish_classes = dal.get_classes_by_parish_id(dal.get_parish_priest_by_id(2).IDParish, include=["Catechist.Person", "Catechizing", "Catechizing.Person", "Schedule.Classroom"])
     return render_template("parish_priest/dashboard.html",
@@ -22,6 +23,7 @@ def dashboard():
 
 
 @bp.route('/catechizing/create', methods=['GET', 'POST'])
+@login_required("ParishPriest")
 def register_catechizing():
     form = CatechizingForm(request.form)
     if request.method == 'POST' and form.validate_on_submit():
@@ -51,6 +53,7 @@ def register_catechizing():
     return render_template('parish_priest/register_catechizing.html', title='Registrar Catequizando', form=form)
 
 @bp.route('/catechizing/update/<id>', methods=['GET', 'POST'])
+@login_required("ParishPriest")
 def update_catechizing(id: int):
     if request.method == "GET":
         catechizing_temp = dal.get_catechizing_by_id(id)
@@ -85,11 +88,13 @@ def update_catechizing(id: int):
     return render_template('parish_priest/update_catechizing.html', title='Actualizar Catequizando', form=form)
 
 @bp.route('/catechizing/delete/<id>', methods=['POST'])
+@login_required("ParishPriest")
 def delete_catechizing(id):
     dal.delete_catechizing(id)
     return redirect(url_for("parish_priest.dashboard"))
 
 @bp.route('/class/create', methods=['GET', 'POST'])
+@login_required("ParishPriest")
 def register_class():
     form = ClassForm(request.form)
     
@@ -110,6 +115,7 @@ def register_class():
     return render_template('parish_priest/register_class.html', title='Registrar Clase', form=form)
 
 @bp.route('/support_person/create', methods=['GET', 'POST'])
+@login_required("ParishPriest")
 def register_support_person():
     form = SupportPersonForm(request.form)
     if request.method == 'POST' and form.validate_on_submit():
