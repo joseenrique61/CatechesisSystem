@@ -56,7 +56,7 @@ class IDataAccessLayer(ABC):
         pass
 
     @abstractmethod
-    def get_catechist_by_id(self, catechist_id: int) -> Optional[CatechistDTO]:
+    def get_catechist_by_id(self, catechist_id: int, include: list[str] = []) -> Optional[CatechistDTO]:
         pass # ID se refiere a Person.IDPerson
 
     @abstractmethod

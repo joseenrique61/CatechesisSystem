@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Catequista - Catequesis Quito{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col">
+        <h1><i class="fas fa-chalkboard-teacher"></i> Dashboard del Catequista</h1>
+        {% if current_catechist and current_catechist.Person %}
+            <h5 class="text-muted">Bienvenido/a, {{ current_catechist.Person.FirstName }} {{ current_catechist.Person.FirstSurname }}</h5>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Sección Mis Catequizandos -->
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-users"></i> Mis Catequizandos</h6>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped table-hover" id="myCatechizingsTable" width="100%" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th>Nombre Completo</th>
+                        <th>Nivel</th>
+                        <th>Clase (ID)</th> {# Opcional, si quieres mostrar el ID de la clase #}
+                        <th>Acciones</th> {# Por si quieres añadir acciones futuras #}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for catechizing in catechizings_assigned %}
+                    <tr>
+                        <td>
+                            {{ catechizing.Person.FirstName if catechizing.Person else 'N/A' }}
+                            {{ catechizing.Person.FirstSurname if catechizing.Person else '' }}
+                        </td>
+                        <td>
+                            {{ catechizing.Class.Level.Name if catechizing.Class and catechizing.Class.Level else 'Nivel no asignado' }}
+                        </td>
+                        <td>
+                            {{ catechizing.Class.IDClass if catechizing.Class else 'N/A' }}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('view_catechizing_detail', id=catechizing.IDCatechizing) }}" class="btn btn-info btn-sm" title="Ver Detalles del Catequizando">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            {# Más acciones como tomar asistencia, etc. podrían ir aquí #}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center">No tienes catequizandos asignados actualmente.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Sección Mis Horarios de Clase -->
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary"><i class="far fa-calendar-alt"></i> Mis Horarios de Clase</h6>
+    </div>
+    <div class="card-body">
+        {% if assigned_schedules %}
+        <div class="list-group">
+            {% for schedule_info in assigned_schedules %}
+            <div class="list-group-item list-group-item-action flex-column align-items-start mb-2 shadow-sm">
+                <div class="d-flex w-100 justify-content-between">
+                    <h5 class="mb-1">
+                        <i class="fas fa-clock me-2"></i>
+                        {{ schedule_info.day_of_week }}: {{ schedule_info.start_hour }} - {{ schedule_info.end_hour }}
+                    </h5>
+                    <small class="text-muted">Nivel: {{ schedule_info.level_name }}</small>
+                </div>
+                <p class="mb-1">
+                    <i class="fas fa-map-marker-alt me-2 text-secondary"></i>Aula: <strong>{{ schedule_info.classroom_name }}</strong>
+                </p>
+                <small class="text-muted">Clase ID: {{ schedule_info.class_id }}</small>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-center">No tienes horarios de clase asignados actualmente.</p>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

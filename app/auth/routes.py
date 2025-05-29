@@ -14,6 +14,8 @@ def login():
                 return redirect(url_for("parish_priest.dashboard"))
             case "Admin":
                 return redirect(url_for("admin.dashboard"))
+            case "Catechist":
+                return redirect(url_for("catechist.dashboard"))
 
     form = LoginForm(request.form)
 

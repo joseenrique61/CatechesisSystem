@@ -162,8 +162,8 @@ class SQLAlchemyDAL(IDataAccessLayer):
         except:
             raise
 
-    def get_catechist_by_id(self, catechist_id: int) -> Optional[CatechistDTO]:
-        pass # ID se refiere a Person.IDPerson
+    def get_catechist_by_id(self, catechist_id: int, include: list[str] = []) -> Optional[CatechistDTO]:
+        return CatechistDTO.from_other_obj(self.db.query(Catechist).filter_by(IDCatechist=catechist_id).one_or_none(), include=include)
 
     def get_all_catechists(self, include: list[str] = []) -> List[CatechistDTO]:
         return [CatechistDTO.from_other_obj(catechist, include=include) for catechist in self.db.query(Catechist).all()]

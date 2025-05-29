@@ -6,7 +6,7 @@ bp = Blueprint('main', __name__)
 @bp.route('/')
 def index():
     # La página raíz redirige al dashboard si está logueado, o al login si no
-    if 'user_id' in session:
+    if 'id' in session:
         return redirect(url_for('main.dashboard'))
     return redirect(url_for('auth.login'))
 
@@ -21,4 +21,6 @@ def dashboard():
             return redirect(url_for("parish_priest.dashboard"))
         case "Admin":
             return redirect(url_for("admin.dashboard"))
+        case "Catechist":
+            return redirect(url_for("catechist.dashboard"))
             
