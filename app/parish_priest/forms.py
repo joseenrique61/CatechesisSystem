@@ -65,8 +65,7 @@ class CatechizingForm(FlaskForm):
 
     def __init__(self, *args, **kwargs):
         super(CatechizingForm, self).__init__(*args, **kwargs)
-        # TODO: Change when the login is working
-        self.IDClass.choices = [(item.IDClass, f"{item.Level.Name}: {', '.join([sch.DayOfTheWeek.DayOfTheWeek + ': ' + sch.StartHour + ' - ' + sch.EndHour for sch in item.Schedule])}") for item in dal.get_classes_by_parish_id(dal.get_parish_priest_by_id(2).IDParish)]
+        self.IDClass.choices = [(item.IDClass, f"{item.Level.Name}: {', '.join([sch.DayOfTheWeek.DayOfTheWeek + ': ' + sch.StartHour + ' - ' + sch.EndHour for sch in item.Schedule])}") for item in dal.get_classes_by_parish_id(dal.get_parish_priest_by_id(session["id"]).IDParish)]
 
 class ScheduleForm(Form):
     IDDayOfTheWeek = SelectField('Día de la semana', coerce=int)
@@ -77,9 +76,7 @@ class ScheduleForm(Form):
     def __init__(self, *args, **kwargs):
         super(ScheduleForm, self).__init__(*args, **kwargs)
         self.IDDayOfTheWeek.choices = [(item.IDDayOfTheWeek, item.DayOfTheWeek) for item in dal.get_all_day_of_the_week()]
-        # self.IDClassroom.choices = [(item.IDClassroom, item.ClassroomName) for item in dal.get_classroom_in_parish(dal.get_parish_priest_by_id(session.get("id")).IDParish)]
-        # TODO: Change when the login is working
-        self.IDClassroom.choices = [(item.IDClassroom, item.ClassroomName) for item in dal.get_classroom_in_parish(dal.get_parish_priest_by_id(2).IDParish)]
+        self.IDClassroom.choices = [(item.IDClassroom, item.ClassroomName) for item in dal.get_classroom_in_parish(dal.get_parish_priest_by_id(session["id"]).IDParish)]
     
     def validate_StartHour(self, field):
         if field.data:
@@ -163,5 +160,4 @@ class CatechizingUpdateForm(UpdateFormBase):
 
     def __init__(self, *args, **kwargs):
         super(CatechizingUpdateForm, self).__init__(*args, **kwargs)
-        # TODO: Change when the login is working
-        self.IDClass.choices = [(item.IDClass, f"{item.Level.Name}: {', '.join([sch.DayOfTheWeek.DayOfTheWeek + ': ' + sch.StartHour + ' - ' + sch.EndHour for sch in item.Schedule])}") for item in dal.get_classes_by_parish_id(dal.get_parish_priest_by_id(2).IDParish)]
+        self.IDClass.choices = [(item.IDClass, f"{item.Level.Name}: {', '.join([sch.DayOfTheWeek.DayOfTheWeek + ': ' + sch.StartHour + ' - ' + sch.EndHour for sch in item.Schedule])}") for item in dal.get_classes_by_parish_id(dal.get_parish_priest_by_id(session["id"]).IDParish)]

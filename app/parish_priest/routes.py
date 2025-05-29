@@ -11,10 +11,10 @@ bp = Blueprint('parish_priest', __name__)
 @bp.route("/dashboard", methods=["GET"])
 @login_required("ParishPriest")
 def dashboard():
-    parish_classes = dal.get_classes_by_parish_id(dal.get_parish_priest_by_id(2).IDParish, include=["Catechist.Person", "Catechizing", "Catechizing.Person", "Schedule.Classroom"])
+    parish_classes = dal.get_classes_by_parish_id(dal.get_parish_priest_by_id(session["id"]).IDParish, include=["Catechist.Person", "Catechizing", "Catechizing.Person", "Schedule.Classroom"])
     return render_template("parish_priest/dashboard.html",
                            title="Dashboard del párroco", 
-                           catechizings=dal.get_catechizings_by_parish(dal.get_parish_priest_by_id(2).IDParish, 
+                           catechizings=dal.get_catechizings_by_parish(dal.get_parish_priest_by_id(session["id"]).IDParish, 
                                                                        include=["Class", "Class.Level"]), 
                            parish_classes=parish_classes,
                            catechists=dal.get_all_catechists(include=["Class", "Class.Level"]), 

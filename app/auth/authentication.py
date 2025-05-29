@@ -21,6 +21,8 @@ def login_required(required_role=None):
             current_role = session["role"]
 
             allowed = False
+            if not required_role and current_role:
+                allowed = True
             if isinstance(required_role, list):
                 if current_role in required_role:
                     allowed = True
