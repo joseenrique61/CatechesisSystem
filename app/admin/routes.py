@@ -70,6 +70,7 @@ def register_catechist():
             return render_template('admin/register_catechist.html', title='Registrar Catequista', form=form)
         
         flash(f'¡Catequista {catechist.Person.FirstName} {catechist.Person.FirstSurname} registrado exitosamente!', 'success')
+        return redirect(url_for("admin.dashboard"))
 
     return render_template('admin/register_catechist.html', title='Registrar Catequista', form=form)
 
@@ -92,4 +93,5 @@ def register_parish():
             return render_template('admin/register_parish.html', title='Registrar Parroquia', form=form)
 
         flash(f'¡Parroquia {parish.Name} registrada exitosamente!', 'success')
+        return redirect(url_for("admin.dashboard"))
     return render_template('admin/register_parish.html', title='Registrar Parroquia', form=form)

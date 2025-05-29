@@ -1,25 +1,253 @@
 {% extends "base.html" %}
+{% from "_form_helpers.html" import render_field, render_file_field, render_submit_field %} {# Opcional: para macros #}
+
+{% block title %}{{ title }}{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-md-10 col-lg-10">
-        <div class="card shadow-sm">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header">
+                <h3 class="card-title">{{ title }}</h3>
+            </div>
             <div class="card-body">
-                <h2 class="card-title text-center mb-4">{{ title }}</h2>
-                {% from "helpers/_formhelpers.html" import render_field %}
-                <form method=post enctype="multipart/form-data">
-                    {% for field in form %}
-                        {% if field.type == 'FormField' %}
-                            {% for field1 in field %}
-                                {{ render_field(field1) }}
-                            {% endfor %}
-                        {% else %}
-                            {{ render_field(field) }}
+                <form method="POST" enctype="multipart/form-data" novalidate>
+                    {{ form.hidden_tag() }} {# CSRF token #}
+
+                    <div class="mb-3">
+                        {{ form.Name.label(class="form-label") }}
+                        {{ form.Name(class="form-control" + (" is-invalid" if form.Name.errors else "")) }}
+                        {% if form.Name.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.Name.errors %}<span>{{ error }}</span>{% endfor %}
+                            </div>
                         {% endif %}
-                    {% endfor %}
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form.LogoImage.label(class="form-label") }}
+                        {{ form.LogoImage(class="form-control" + (" is-invalid" if form.LogoImage.errors else ""), id="logoUpload") }}
+                        <div class="image-preview-container" id="logoPreviewContainer">
+                            <img id="logoPreviewImage" src="#" alt="Previsualización del Logo" />
+                            <span class="preview-text">Previsualización del logo</span>
+                        </div>
+                        {% if form.LogoImage.errors %}
+                            <div class="invalid-feedback d-block"> {# d-block para que se muestre #}
+                                {% for error in form.LogoImage.errors %}<span>{{ error }}</span><br>{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <fieldset class="mb-3 border p-3">
+                        <legend class="w-auto px-2 h6">{{ form.Address.label.text }}</legend>
+                        <div class="mb-3">
+                            {{ form.Address.MainStreet.label(class="form-label") }}
+                            {{ form.Address.MainStreet(class="form-control" + (" is-invalid" if form.Address.MainStreet.errors else "")) }}
+                            {% if form.Address.MainStreet.errors %}
+                                <div class="invalid-feedback">{% for error in form.Address.MainStreet.errors %}<span>{{ error }}</span>{% endfor %}</div>
+                            {% endif %}
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.Address.Number.label(class="form-label") }}
+                                {{ form.Address.Number(class="form-control" + (" is-invalid" if form.Address.Number.errors else "")) }}
+                                {% if form.Address.Number.errors %}
+                                    <div class="invalid-feedback">{% for error in form.Address.Number.errors %}<span>{{ error }}</span>{% endfor %}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.Address.SecondStreet.label(class="form-label") }}
+                                {{ form.Address.SecondStreet(class="form-control" + (" is-invalid" if form.Address.SecondStreet.errors else "")) }}
+                                {% if form.Address.SecondStreet.errors %}
+                                    <div class="invalid-feedback">{% for error in form.Address.SecondStreet.errors %}<span>{{ error }}</span>{% endfor %}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <fieldset class="mb-3 border p-3">
+                             <legend class="w-auto px-2 h6">{{ form.Address.Location.label.text }}</legend>
+                             <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    {{ form.Address.Location.Country.label(class="form-label") }}
+                                    {{ form.Address.Location.Country(class="form-control" + (" is-invalid" if form.Address.Location.Country.errors else "")) }}
+                                    {% if form.Address.Location.Country.errors %}
+                                        <div class="invalid-feedback">{% for error in form.Address.Location.Country.errors %}<span>{{ error }}</span>{% endfor %}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    {{ form.Address.Location.Province.label(class="form-label") }}
+                                    {{ form.Address.Location.Province(class="form-control" + (" is-invalid" if form.Address.Location.Province.errors else "")) }}
+                                    {% if form.Address.Location.Province.errors %}
+                                        <div class="invalid-feedback">{% for error in form.Address.Location.Province.errors %}<span>{{ error }}</span>{% endfor %}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    {{ form.Address.Location.State.label(class="form-label") }}
+                                    {{ form.Address.Location.State(class="form-control" + (" is-invalid" if form.Address.Location.State.errors else "")) }}
+                                    {% if form.Address.Location.State.errors %}
+                                        <div class="invalid-feedback">{% for error in form.Address.Location.State.errors %}<span>{{ error }}</span>{% endfor %}</div>
+                                    {% endif %}
+                                </div>
+                             </div>
+                        </fieldset>
+                    </fieldset>
+
+                    <fieldset class="mb-3 border p-3">
+                        <legend class="w-auto px-2 h6">{{ form.Classroom.label.text }}</legend>
+                        <div id="classroom-list">
+                            {% for classroom_field in form.Classroom %}
+                            <div class="classroom-entry mb-2" id="classroom-{{ loop.index0 }}">
+                                {{ classroom_field.ClassroomName.label(class="form-label sr-only") }} {# sr-only si no quieres mostrarlo pero es bueno para accesibilidad #}
+                                <div class="input-group">
+                                    {{ classroom_field.ClassroomName(class="form-control form-control-sm" + (" is-invalid" if classroom_field.ClassroomName.errors else ""), placeholder="Nombre del Aula " + loop.index|string) }}
+                                    <button type="button" class="btn btn-danger btn-sm remove-classroom" {% if loop.first and form.Classroom.min_entries == 1 %}disabled{% endif %}>
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                                {% if classroom_field.ClassroomName.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in classroom_field.ClassroomName.errors %}<span>{{ error }}</span><br>{% endfor %}
+                                    </div>
+                                {% endif %}
+                                {{ classroom_field.csrf_token }} {# Si ClassroomForm fuera FlaskForm, necesitaría esto. Con wtforms.Form no lo necesita. #}
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <button type="button" id="add-classroom" class="btn btn-outline-success btn-sm mt-2">
+                            <i class="fas fa-plus"></i> Añadir Aula
+                        </button>
+                    </fieldset>
+                    
+                    <div class="d-grid">
+                        {{ form.Submit(class="btn btn-primary btn-lg") }}
+                    </div>
                 </form>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts_extra %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // Previsualización de Logo
+    const logoUpload = document.getElementById('logoUpload');
+    const logoPreviewImage = document.getElementById('logoPreviewImage');
+    const logoPreviewContainer = document.getElementById('logoPreviewContainer');
+    const previewText = logoPreviewContainer.querySelector('.preview-text');
+
+    if (logoUpload) {
+        logoUpload.addEventListener('change', function (event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    logoPreviewImage.src = e.target.result;
+                    logoPreviewImage.style.display = 'block';
+                    if(previewText) previewText.style.display = 'none';
+                }
+                reader.readAsDataURL(file);
+            } else {
+                logoPreviewImage.src = '#';
+                logoPreviewImage.style.display = 'none';
+                if(previewText) previewText.style.display = 'block';
+            }
+        });
+    }
+
+    // Añadir y quitar aulas dinámicamente
+    const addClassroomButton = document.getElementById('add-classroom');
+    const classroomList = document.getElementById('classroom-list');
+    const minEntries = parseInt("{{ form.Classroom.min_entries }}", 10) || 0;
+
+    function updateRemoveButtons() {
+        const classroomEntries = classroomList.querySelectorAll('.classroom-entry');
+        classroomEntries.forEach((entry, index) => {
+            const removeButton = entry.querySelector('.remove-classroom');
+            if (removeButton) {
+                removeButton.disabled = classroomEntries.length <= minEntries;
+            }
+        });
+    }
+    
+    if (addClassroomButton && classroomList) {
+        // Template para nuevas aulas. Se toma el primer elemento, se clona y se ajustan los índices.
+        // Importante: WTForms espera nombres como 'Classroom-X-ClassroomName'
+        // El template debe ser representativo del HTML generado por WTForms.
+        let classroomEntryHtml = '';
+        if (classroomList.children.length > 0) {
+            // Tomamos el HTML del primer elemento como plantilla base
+            // Pero hay que tener cuidado, ya que el primer elemento puede tener valores y errores
+            // Lo ideal es tener una plantilla limpia o construirla
+            // Aquí vamos a simplificar clonando y limpiando lo básico
+            const firstEntry = classroomList.querySelector('.classroom-entry');
+            if(firstEntry){
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = firstEntry.outerHTML;
+                const tempInput = tempDiv.querySelector('input[type="text"]');
+                if(tempInput) {
+                    tempInput.value = ''; // Limpiar valor
+                    // Quitar clases de error si las tuviera
+                    tempInput.classList.remove('is-invalid'); 
+                }
+                const tempErrorDiv = tempDiv.querySelector('.invalid-feedback');
+                if(tempErrorDiv) tempErrorDiv.innerHTML = ''; // Limpiar errores
+
+                classroomEntryHtml = tempDiv.innerHTML;
+            }
+        }
+        
+        // Si no hay plantilla (ej. min_entries=0 y no hay nada renderizado), creamos una básica
+        if (!classroomEntryHtml) {
+            const tempIndex = '{{ form.Classroom|length }}'; // Un placeholder para el índice
+            classroomEntryHtml = `
+                <div class="classroom-entry mb-2" id="classroom-${tempIndex}">
+                    <div class="input-group">
+                        <input class="form-control form-control-sm" id="Classroom-${tempIndex}-ClassroomName" name="Classroom-${tempIndex}-ClassroomName" placeholder="Nombre del Aula ${parseInt(tempIndex,10)+1}" type="text" value="">
+                        <button type="button" class="btn btn-danger btn-sm remove-classroom">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>`;
+        }
+
+
+        addClassroomButton.addEventListener('click', function () {
+            const newIndex = classroomList.children.length;
+            const newClassroomEntry = document.createElement('div');
+            // Reemplazar los placeholders de índice en la plantilla
+            let currentEntryHtml = classroomEntryHtml.replace(/-0-/g, `-${newIndex}-`).replace(/"classroom-0"/, `"classroom-${newIndex}"`);
+            currentEntryHtml = currentEntryHtml.replace(/Aula 1/g, `Aula ${newIndex + 1}`); // Actualizar placeholder si existe
+
+            newClassroomEntry.innerHTML = currentEntryHtml; 
+            // Tomamos el primer hijo del div temporal, que es el .classroom-entry
+            classroomList.appendChild(newClassroomEntry.firstElementChild);
+            updateRemoveButtons();
+        });
+
+        classroomList.addEventListener('click', function (event) {
+            if (event.target.closest('.remove-classroom')) {
+                if (classroomList.children.length > minEntries) {
+                    event.target.closest('.classroom-entry').remove();
+
+                    let values = []
+                    classroomEntries = classroomList.querySelectorAll(".classroom-entry")
+                    classroomEntries.forEach((entry, index) => {
+                        values.push(entry.querySelector('input[type="text"]').value)
+                        entry.outerHTML = entry.outerHTML.replace(/-\d+-/g, `-${index}-`).replace(/"classroom-\d+"/, `"classroom-${index}"`).replace(/Aula\s\d+"/, `Aula ${index + 1}"`);
+                    })
+
+                    classroomEntries = classroomList.querySelectorAll(".classroom-entry")
+                    values.forEach((value, index) => {
+                        classroomEntries[index].querySelector('input[type="text"]').value = value
+                    })
+
+                    updateRemoveButtons();
+                }
+            }
+        });
+        updateRemoveButtons(); // Estado inicial de los botones de eliminar
+    }
+});
+</script>
 {% endblock %}
