@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, session, redirect, url_for, flash
 from app.main.data.duplicate_column_exception import DuplicateColumnException
-from app.parish_priest.forms import CatechizingForm, CatechizingUpdateForm, ClassForm, CatechistForm, SupportPersonForm
-from app.main.data.dtos.base_dtos import CatechizingDTO, ClassDTO, CatechistDTO, SupportPersonDTO
+from app.parish_priest.forms import CatechizingForm, CatechizingUpdateForm, ClassForm, SupportPersonForm
+from app.main.data.dtos.base_dtos import CatechizingDTO, ClassDTO, SupportPersonDTO
 from app.parish_priest.helpers import calculate_age
 from app import dal
 
@@ -10,7 +10,7 @@ bp = Blueprint('parish_priest', __name__)
 # TODO: Login required decorator
 @bp.route("/dashboard", methods=["GET"])
 def dashboard():
-    return render_template("parish_priest/dashboard.html", title="Dashboard del párroco", catechizings=dal.get_all_catechizings(include=["Class", "Class.Level"]), catechists=dal.get_all_catechists(include=["Class", "Class.Level"]), calculate_age=calculate_age)
+    return render_template("parish_priest/dashboard.html", title="Dashboard del párroco", catechizings=dal.get_catechizings_by_parish(dal.get_parish_priest_by_id(2).IDParish, include=["Class", "Class.Level"]), catechists=dal.get_all_catechists(include=["Class", "Class.Level"]), calculate_age=calculate_age)
 
 
 @bp.route('/catechizing/create', methods=['GET', 'POST'])
@@ -107,34 +107,6 @@ def register_class():
         flash(f'¡Clase registrada exitosamente!', 'success')
 
     return render_template('parish_priest/register_class.html', title='Registrar Clase', form=form)
-
-@bp.route('/catechist/create', methods=['GET', 'POST'])
-def register_catechist():
-    form = CatechistForm(request.form)
-    if request.method == 'POST' and form.validate_on_submit():
-        catechist = CatechistDTO.from_other_obj(form, depth=-1, custom_var_path="data")
-
-        try:
-            catechist, _ = dal.register_catechist(catechist)
-        except DuplicateColumnException as e:
-            print(f"Error inserting catechist: {e}")
-
-            match e.table:
-                case "User":
-                    error_message = f"El usuario {e.values['Username']} ya existe."
-                case "Person":
-                    match list(e.values.keys())[0]:
-                        case "DNI":
-                            error_message = f"La persona con el DNI {e.values['DNI']} ya existe."
-                        case "FirstName":
-                            error_message = f"Ya existe la persona {e.values['FirstName']} {e.values['FirstSurname']}."
-
-            flash(error_message, 'danger')
-            return render_template('admin/register_parish_priest.html', title='Registrar Sacerdote', form=form)
-        
-        flash(f'¡Catequista {catechist.Person.FirstName} {catechist.Person.FirstSurname} registrado exitosamente!', 'success')
-
-    return render_template('parish_priest/register_catechist.html', title='Registrar Sacerdote', form=form)
 
 @bp.route('/support_person/create', methods=['GET', 'POST'])
 def register_support_person():

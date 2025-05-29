@@ -38,6 +38,10 @@ class IDataAccessLayer(ABC):
         pass
 
     @abstractmethod
+    def get_all_parish_priests(self) -> List[ParishPriestDTO]:
+        pass
+
+    @abstractmethod
     def update_parish_priest(self, priest_id: int, priest_data: ParishPriestDTO) -> Optional[ParishPriestDTO]:
         pass
 
@@ -78,6 +82,10 @@ class IDataAccessLayer(ABC):
 
     @abstractmethod
     def get_catechizings_by_class(self, class_id: int) -> List[CatechizingDTO]:
+        pass
+
+    @abstractmethod
+    def get_catechizings_by_parish(self, parish_id: int, include: list[str] = []) -> List[CatechizingDTO]:
         pass
 
     @abstractmethod

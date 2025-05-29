@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Administrador - Catequesis Quito{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col">
+        <h1><i class="fas fa-user-shield"></i> Dashboard del Administrador</h1>
+    </div>
+</div>
+
+<!-- Sección Párrocos -->
+<div class="card shadow mb-4">
+    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+        <h6 class="m-0 font-weight-bold text-primary">Párrocos</h6>
+        <a href="{{ url_for('admin.register_parish_priest') }}" class="btn btn-success btn-sm"><i class="fas fa-plus"></i> Añadir Párroco</a>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped table-hover" id="parishPriestsTable" width="100%" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th>Nombre de Usuario</th>
+                        <th>Nombre Completo</th>
+                        <th>Parroquia</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for priest in parish_priests %}
+                    <tr>
+                        <td>
+                            {{ priest.User.Username if priest.User else 'N/A' }}
+                        </td>
+                        <td>
+                            {{ priest.Person.FirstName if priest.Person else 'N/A' }}
+                            {{ priest.Person.FirstSurname if priest.Person else '' }}
+                        </td>
+                        <td>
+                            {{ priest.Parish.Name if priest.Parish else 'No asignada' }}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center">No hay párrocos registrados.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Sección Catequistas (similar a la del dashboard del párroco pero con la columna Username) -->
+<div class="card shadow mb-4">
+    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+        <h6 class="m-0 font-weight-bold text-primary">Catequistas</h6>
+        <a href="{{ url_for('admin.register_catechist') }}" class="btn btn-success btn-sm"><i class="fas fa-user-plus"></i> Añadir Catequista</a>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped table-hover" id="catechistsAdminTable" width="100%" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th>Nombre de Usuario</th>
+                        <th>Nombre Completo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for catechist in catechists %}
+                    <tr>
+                        <td>
+                            {{ catechist.User.Username if catechist.User else 'N/A' }}
+                        </td>
+                        <td>
+                            {{ catechist.Person.FirstName if catechist.Person else 'N/A' }}
+                            {{ catechist.Person.FirstSurname if catechist.Person else '' }}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center">No hay catequistas registrados.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

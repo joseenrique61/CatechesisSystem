@@ -4,10 +4,15 @@ from app.main.data.duplicate_column_exception import DuplicateColumnException
 from app.main.forms import ParishForm
 from app import dal
 from app.main.data.dtos.base_dtos import *
+from app.parish_priest.forms import CatechistForm
 
 bp = Blueprint('admin', __name__)
 
 # TODO: Login required decorator
+@bp.route('/dashboard', methods=['GET'])
+def dashboard():
+    return render_template("admin/dashboard.html", title="Dashboard del Administrador", parish_priests=dal.get_all_parish_priests(), catechists=dal.get_all_catechists())
+
 @bp.route('/parish_priest/create', methods=['GET', 'POST'])
 def register_parish_priest():
     form = ParishPriestForm(request.form)
@@ -39,6 +44,34 @@ def register_parish_priest():
 
     return render_template('admin/register_parish_priest.html', title='Registrar Sacerdote', form=form)
 
+
+@bp.route('/catechist/create', methods=['GET', 'POST'])
+def register_catechist():
+    form = CatechistForm(request.form)
+    if request.method == 'POST' and form.validate_on_submit():
+        catechist = CatechistDTO.from_other_obj(form, depth=-1, custom_var_path="data")
+
+        try:
+            catechist, _ = dal.register_catechist(catechist)
+        except DuplicateColumnException as e:
+            print(f"Error inserting catechist: {e}")
+
+            match e.table:
+                case "User":
+                    error_message = f"El usuario {e.values['Username']} ya existe."
+                case "Person":
+                    match list(e.values.keys())[0]:
+                        case "DNI":
+                            error_message = f"La persona con el DNI {e.values['DNI']} ya existe."
+                        case "FirstName":
+                            error_message = f"Ya existe la persona {e.values['FirstName']} {e.values['FirstSurname']}."
+
+            flash(error_message, 'danger')
+            return render_template('admin/register_catechist.html', title='Registrar Catequista', form=form)
+        
+        flash(f'¡Catequista {catechist.Person.FirstName} {catechist.Person.FirstSurname} registrado exitosamente!', 'success')
+
+    return render_template('admin/register_catechist.html', title='Registrar Catequista', form=form)
 
 @bp.route('/parish/create', methods=['GET', 'POST'])
 def register_parish():

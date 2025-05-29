@@ -139,6 +139,9 @@ class SQLAlchemyDAL(IDataAccessLayer):
     def get_parish_priests_by_parish(self, parish_id: int) -> List[ParishPriestDTO]:
         pass
 
+    def get_all_parish_priests(self) -> List[ParishPriestDTO]:
+        return [ParishPriestDTO.from_other_obj(parish_priest) for parish_priest in self.db.query(ParishPriest).all()]
+
     def update_parish_priest(self, priest_id: int, priest_data: ParishPriestDTO) -> Optional[ParishPriestDTO]:
         pass
 
@@ -218,6 +221,14 @@ class SQLAlchemyDAL(IDataAccessLayer):
 
     def get_catechizings_by_class(self, class_id: int) -> List[CatechizingDTO]:
         pass
+
+    def get_catechizings_by_parish(self, parish_id: int, include: list[str] = []) -> List[CatechizingDTO]:
+        cursor = self.db.execute(text("SET NOCOUNT ON; EXEC [ClassInformation].[sp_CatechizingsInParish] @IDParish = :id; SET NOCOUNT OFF"), {"id": parish_id})
+        catechizing_ids = cursor.fetchall()
+        results = []
+        for row in catechizing_ids:
+            results.append(CatechizingDTO.from_other_obj(self.db.query(Catechizing).filter_by(IDCatechizing=row.IDCatechizing).one_or_none(), include=include))
+        return results
 
     def get_all_catechizings(self, include: list[str] = []) -> List[CatechizingDTO]:
         return [CatechizingDTO.from_other_obj(catechizing, include=include) for catechizing in self.db.query(Catechizing).all()]
@@ -310,7 +321,6 @@ class SQLAlchemyDAL(IDataAccessLayer):
         return ClassPeriodDTO.from_other_obj(self.db.query(ClassPeriod).filter_by(IDClassPeriod=period_id).one_or_none())
     
     def get_classes_by_parish_id(self, parish_id: int) -> List[ClassDTO]:
-        # return [ClassDTO.from_other_obj(class_data) for class_data in self.db.query(Class).filter_by()]
         cursor = self.db.execute(text("SET NOCOUNT ON; EXEC [ClassInformation].[sp_ClassesInParish] @IDParish = :id; SET NOCOUNT OFF"), {"id": parish_id})
         class_ids = cursor.fetchall()
         results = []
