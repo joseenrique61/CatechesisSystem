@@ -66,8 +66,8 @@ class SQLAlchemyDAL(IDataAccessLayer):
     def get_all_catechists(self) -> List[CatechistDTO]:
         return [CatechistDTO.from_other_obj(catechist) for catechist in self.db.query(Catechist).all()]
 
-    def get_all_support_person(self) -> List[SupportPersonDTO]:
-        return [SupportPersonDTO.from_other_obj(support_person) for support_person in self.db.query(SupportPerson).all()]
+    def get_all_support_person(self, include: list[str] = []) -> List[SupportPersonDTO]:
+        return [SupportPersonDTO.from_other_obj(support_person, include=include) for support_person in self.db.query(SupportPerson).all()]
 
     def get_all_day_of_the_week(self) -> List[DayOfTheWeekDTO]:
         return [DayOfTheWeekDTO.from_other_obj(day_of_the_week) for day_of_the_week in self.db.query(DayOfTheWeek).order_by(asc(DayOfTheWeek.IDDayOfTheWeek)).all()]

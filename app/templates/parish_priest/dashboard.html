@@ -121,6 +121,55 @@
     </div>
 </div>
 
+<!-- Sección Personas de Soporte -->
+<div class="card shadow mb-4">
+    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+        <h6 class="m-0 font-weight-bold text-primary">Personas de Soporte</h6>
+        <a href="{{ url_for('parish_priest.register_support_person') }}" class="btn btn-success mt-3"><i class="fas fa-user-plus"></i> Registrar Nueva Persona de Soporte</a>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped table-hover" id="supportPersonsTable" width="100%" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th>Nombre Completo</th>
+                        <th>Niveles en los que Asiste</th> <!-- Nuevo encabezado -->
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for support_person in support_persons %} {# Itera sobre la lista de personas de soporte #}
+                    <tr>
+                        <td>
+                            {# Muestra el nombre completo del SupportPerson #}
+                            {{ support_person.Person.FirstName if support_person.Person else 'N/A' }}
+                            {{ support_person.Person.FirstSurname if support_person.Person else '' }}
+                        </td>
+                        <td>
+                            {# Muestra los nombres de los niveles de las clases en las que asiste, permitiendo repeticiones #}
+                            {% if support_person.Class %}
+                                {% for cls in support_person.Class %}
+                                    {% if cls.Level and cls.Level.Name %}
+                                        {{ cls.Level.Name }}{% if not loop.last %}, {% endif %}
+                                    {% endif %}
+                                {% else %}
+                                    Ninguno asignado
+                                {% endfor %}
+                            {% else %}
+                                Ninguno asignado
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="3" class="text-center">No hay personas de soporte registradas.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
 <!-- Sección Catequistas -->
 <div class="card shadow mb-4">
     <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
@@ -160,5 +209,6 @@
         </div>
     </div>
 </div>
+
 
 {% endblock %}

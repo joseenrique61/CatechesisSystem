@@ -16,6 +16,7 @@ def dashboard():
                                                                        include=["Class", "Class.Level"]), 
                            parish_classes=dal.get_classes_by_parish_id(dal.get_parish_priest_by_id(2).IDParish, include=["Catechist.Person", "Catechizing", "Catechizing.Person", "Schedule.Classroom"]),
                            catechists=dal.get_all_catechists(include=["Class", "Class.Level"]), 
+                           support_persons=dal.get_all_support_person(include=["Class", "Class.Level"]),
                            calculate_age=calculate_age)
 
 
@@ -44,6 +45,7 @@ def register_catechizing():
             return render_template('parish_priest/register_catechizing.html', title='Registrar Catequizando', form=form)
 
         flash(f'¡Catequizando {catechizing.Person.FirstName} {catechizing.Person.FirstSurname} registrado exitosamente!', 'success')
+        return redirect(url_for("parish_priest.dashboard"))
 
     return render_template('parish_priest/register_catechizing.html', title='Registrar Catequizando', form=form)
 
@@ -57,8 +59,6 @@ def update_catechizing(id: int):
 
     if request.method == 'POST' and form.validate_on_submit():
         catechizing = CatechizingDTO.from_other_obj(form, depth=-1, custom_var_path="data", exclude=["Person.BirthLocation", "Person.BirthDate", "Parent", "Godparent"], include=["Parent", "Godparent", "HealthInformation.Allergy"])
-        # catechizing = CatechizingDTO()
-        # form.populate_obj(catechizing)
 
         try:
             catechizing, _ = dal.update_catechizing(id, catechizing)
@@ -79,6 +79,7 @@ def update_catechizing(id: int):
             return render_template('parish_priest/update_catechizing.html', title='Actualizar Catequizando', form=form)
 
         flash(f'¡Catequizando {catechizing.Person.FirstName} {catechizing.Person.FirstSurname} actualizado exitosamente!', 'success')
+        return redirect(url_for("parish_priest.dashboard"))
 
     return render_template('parish_priest/update_catechizing.html', title='Actualizar Catequizando', form=form)
 
@@ -99,18 +100,11 @@ def register_class():
         except DuplicateColumnException as e:
             print(f"Error inserting class: {e}")
 
-            # match e.table:
-            #     case "Schedule":
-            #         match e.columns[0]:
-            #             case "DNI":
-            #                 error_message = f"La persona con el DNI {class_data.Person.DNI} ya existe."
-            #             case "FirstName":
-            #                 error_message = f"Ya existe la persona {class_data.Person.FirstName} {class_data.Person.FirstSurname}."
-            
             flash("Error al registrar la clase", 'danger')
             return render_template('parish_priest/register_class.html', title='Registrar Clase', form=form)
 
         flash(f'¡Clase registrada exitosamente!', 'success')
+        return redirect(url_for("parish_priest.dashboard"))
 
     return render_template('parish_priest/register_class.html', title='Registrar Clase', form=form)
 
@@ -139,5 +133,6 @@ def register_support_person():
             return render_template('parish_priest/register_support_person.html', title='Registrar Persona de Soporte', form=form)
         
         flash(f'¡Persona de soporte {support_person.Person.FirstName} {support_person.Person.FirstSurname} registrado exitosamente!', 'success')
+        return redirect(url_for("parish_priest.dashboard"))
 
     return render_template('parish_priest/register_support_person.html', title='Registrar Persona de Soporte', form=form)
