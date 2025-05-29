@@ -320,12 +320,12 @@ class SQLAlchemyDAL(IDataAccessLayer):
     def get_class_period_by_id(self, period_id: int) -> Optional[ClassPeriodDTO]:
         return ClassPeriodDTO.from_other_obj(self.db.query(ClassPeriod).filter_by(IDClassPeriod=period_id).one_or_none())
     
-    def get_classes_by_parish_id(self, parish_id: int) -> List[ClassDTO]:
+    def get_classes_by_parish_id(self, parish_id: int, include: list[str]) -> List[ClassDTO]:
         cursor = self.db.execute(text("SET NOCOUNT ON; EXEC [ClassInformation].[sp_ClassesInParish] @IDParish = :id; SET NOCOUNT OFF"), {"id": parish_id})
         class_ids = cursor.fetchall()
         results = []
         for row in class_ids:
-            results.append(ClassDTO.from_other_obj(self.db.query(Class).filter_by(IDClass=row.IDClass).one_or_none(), include=["Schedule", "Schedule.DayOfTheWeek"]))
+            results.append(ClassDTO.from_other_obj(self.db.query(Class).filter_by(IDClass=row.IDClass).one_or_none(), include=["Schedule", "Schedule.DayOfTheWeek"] + include))
         return results
 
     def get_all_blood_types(self) -> List[BloodTypeDTO]:

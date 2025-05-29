@@ -65,6 +65,62 @@
     </div>
 </div>
 
+<!-- Sección Clases de la Parroquia -->
+<div class="card shadow mb-4">
+    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+        <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-chalkboard-teacher"></i> Clases del Período Actual</h6>
+        <a href="{{ url_for('parish_priest.register_class') }}" class="btn btn-success btn-sm"><i class="fas fa-plus"></i> Añadir Clase</a>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped table-hover" id="parishClassesTable" width="100%" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th>Nivel</th>
+                        <th>Horarios y Aulas</th>
+                        <th>Catequista</th>
+                        <th># Catequizandos</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p_class in parish_classes %} {# p_class para evitar conflicto con 'class' #}
+                    <tr>
+                        <td>
+                            {{ p_class.Level.Name if p_class.Level else 'N/A' }}
+                        </td>
+                        <td>
+                            {% if p_class.Schedule %}
+                                {% for schedule_info in p_class.Schedule %}
+                                    Aula: {{ schedule_info.Classroom.ClassroomName }}. {{ schedule_info.DayOfTheWeek.DayOfTheWeek }}: {{ schedule_info.StartHour }} - {{ schedule_info.EndHour }} <br>
+                                {% endfor %}
+                            {% else %}
+                                Horario no definido
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if p_class.Catechist and p_class.Catechist.Person %}
+                                {{ p_class.Catechist.Person.FirstName }} {{ p_class.Catechist.Person.FirstSurname }}
+                            {% elif p_class.Catechist and p_class.Catechist.User %}
+                                Usuario: {{ p_class.Catechist.User.Username }}
+                            {% else %}
+                                No asignado
+                            {% endif %}
+                        </td>
+                        <td>
+                            {{ p_class.Catechizing | length if p_class.Catechizing is not none else 0 }}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center">No hay clases registradas para el período actual.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
 <!-- Sección Catequistas -->
 <div class="card shadow mb-4">
     <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">

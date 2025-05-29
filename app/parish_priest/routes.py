@@ -10,7 +10,13 @@ bp = Blueprint('parish_priest', __name__)
 # TODO: Login required decorator
 @bp.route("/dashboard", methods=["GET"])
 def dashboard():
-    return render_template("parish_priest/dashboard.html", title="Dashboard del párroco", catechizings=dal.get_catechizings_by_parish(dal.get_parish_priest_by_id(2).IDParish, include=["Class", "Class.Level"]), catechists=dal.get_all_catechists(include=["Class", "Class.Level"]), calculate_age=calculate_age)
+    return render_template("parish_priest/dashboard.html",
+                           title="Dashboard del párroco", 
+                           catechizings=dal.get_catechizings_by_parish(dal.get_parish_priest_by_id(2).IDParish, 
+                                                                       include=["Class", "Class.Level"]), 
+                           parish_classes=dal.get_classes_by_parish_id(dal.get_parish_priest_by_id(2).IDParish, include=["Catechist.Person", "Catechizing", "Catechizing.Person", "Schedule.Classroom"]),
+                           catechists=dal.get_all_catechists(include=["Class", "Class.Level"]), 
+                           calculate_age=calculate_age)
 
 
 @bp.route('/catechizing/create', methods=['GET', 'POST'])
