@@ -1,0 +1,40 @@
+{# Espera una variable 'sch_addr_form' que es una instancia de AddressForm #}
+{# También puede usar 'size_class' para controlar el tamaño de los inputs #}
+<div class="mb-3">
+    {{ sch_addr_form.MainStreet.label(class="form-label") }}
+    {{ sch_addr_form.MainStreet(class="form-control " + (size_class if size_class else "") + (" is-invalid" if sch_addr_form.MainStreet.errors else "")) }}
+    {% if sch_addr_form.MainStreet.errors %}<div class="invalid-feedback">{% for e in sch_addr_form.MainStreet.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
+</div>
+<div class="row">
+    <div class="col-md-6 mb-3">
+        {{ sch_addr_form.Number.label(class="form-label") }}
+        {{ sch_addr_form.Number(class="form-control " + (size_class if size_class else "") + (" is-invalid" if sch_addr_form.Number.errors else "")) }}
+        {% if sch_addr_form.Number.errors %}<div class="invalid-feedback">{% for e in sch_addr_form.Number.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
+    </div>
+    <div class="col-md-6 mb-3">
+        {{ sch_addr_form.SecondStreet.label(class="form-label") }}
+        {{ sch_addr_form.SecondStreet(class="form-control " + (size_class if size_class else "") + (" is-invalid" if sch_addr_form.SecondStreet.errors else "")) }}
+        {% if sch_addr_form.SecondStreet.errors %}<div class="invalid-feedback">{% for e in sch_addr_form.SecondStreet.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
+    </div>
+</div>
+<fieldset class="nested-fieldset p-2">
+    <legend class="w-auto px-2 small">{{ sch_addr_form.Location.label.text }}</legend>
+    {% set loc_form = sch_addr_form.Location %}
+    <div class="row">
+        <div class="col-md-4 mb-3">
+            {{ loc_form.Country.label(class="form-label") }}
+            {{ loc_form.Country(class="form-control " + (size_class if size_class else "form-control-sm") + (" is-invalid" if loc_form.Country.errors else "")) }}
+            {% if loc_form.Country.errors %}<div class="invalid-feedback">{% for e in loc_form.Country.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
+        </div>
+        <div class="col-md-4 mb-3">
+            {{ loc_form.Province.label(class="form-label") }}
+            {{ loc_form.Province(class="form-control " + (size_class if size_class else "form-control-sm") + (" is-invalid" if loc_form.Province.errors else "")) }}
+            {% if loc_form.Province.errors %}<div class="invalid-feedback">{% for e in loc_form.Province.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
+        </div>
+        <div class="col-md-4 mb-3">
+            {{ loc_form.State.label(class="form-label") }}
+            {{ loc_form.State(class="form-control " + (size_class if size_class else "form-control-sm") + (" is-invalid" if loc_form.State.errors else "")) }}
+            {% if loc_form.State.errors %}<div class="invalid-feedback">{% for e in loc_form.State.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
+        </div>
+    </div>
+</fieldset>

@@ -149,7 +149,7 @@ class CatechizingUpdateForm(UpdateFormBase):
     PayedLevelCourse: bool = BooleanField('¿Curso de Nivel Pagado?', default=False)
 
     Parent: list['ParentForm'] = HiddenField(FieldList(FormField(ParentForm), 'Padres/Tutores', min_entries=1, max_entries=2)) # Al menos un padre/tutor
-    Godparent: list['GodparentForm'] = HiddenField(FieldList(FormField(GodparentForm), 'Padrinos/Madrinas', min_entries=1, max_entries=2)) # Padrinos pueden ser opcionales inicialmente
+    Godparent: list['GodparentForm'] = HiddenField(FieldList(FormField(GodparentForm), 'Padrinos/Madrinas', min_entries=0, max_entries=2)) # Padrinos pueden ser opcionales inicialmente
 
     HealthInformation: 'HealthInformationUpdateForm' = FormField(HealthInformationUpdateForm, 'Información de Salud')
 
