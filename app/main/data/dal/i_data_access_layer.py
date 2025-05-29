@@ -13,7 +13,7 @@ class IDataAccessLayer(ABC):
         pass
 
     @abstractmethod
-    def get_all_parishes(self, include: list[str]) -> List[ParishDTO]:
+    def get_all_parishes(self, include: list[str] = []) -> List[ParishDTO]:
         pass
 
     @abstractmethod
@@ -170,5 +170,5 @@ class IDataAccessLayer(ABC):
         pass
 
     @abstractmethod
-    def get_classes_by_parish_id(self, parish_id: int, include: list[str]) -> List[ClassDTO]:
+    def get_classes_by_parish_id(self, parish_id: int, include: list[str] = []) -> List[ClassDTO]:
         pass

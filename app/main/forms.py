@@ -36,7 +36,7 @@ class PersonForm(Form):
     BirthDate = DateField('Fecha de nacimiento', format='%Y-%m-%d', validators=[validators.DataRequired()])
     BirthLocation = FormField(LocationForm, label='Lugar de nacimiento')
     DNI = StringField('Cédula', [validators.Length(min=1, max=10)])
-    Gender = RadioField('Género', choices=[('M', 'Masculino'), ('F', 'Femenino')])
+    Gender = RadioField('Género', choices=[('M', 'Masculino'), ('F', 'Femenino')], default="M")
     Address = FormField(AddressForm, label='Dirección de vivienda')
     PhoneNumber = FormField(PhoneNumberForm, label="Número de teléfono")
     EmailAddress = EmailField('Correo electrónico', [validators.Length(min=1, max=100)])

@@ -1,4 +1,4 @@
-from wtforms import FieldList, IntegerField, HiddenField, StringField, TimeField, SelectField, BooleanField, FormField, SubmitField, TextAreaField
+from wtforms import Form, FieldList, IntegerField, HiddenField, StringField, TimeField, SelectField, BooleanField, FormField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired, Length, Optional, NumberRange
 from flask_wtf import FlaskForm
 from flask import session
@@ -6,25 +6,25 @@ from app.main.forms import PersonForm, PersonUpdateForm, AddressForm, UpdateForm
 from app.auth.forms import UserForm
 from app import dal
 
-class SchoolForm(FlaskForm):
+class SchoolForm(Form):
     SchoolName = StringField('Nombre de la escuela', validators=[DataRequired(), Length(max=50)])
     Address = FormField(AddressForm, label='Dirección del colegio')
 
-class SchoolClassYearForm(FlaskForm):
+class SchoolClassYearForm(Form):
     SchoolYear: str = StringField('Año Escolar', validators=[DataRequired(), Length(max=10)])
     School: 'SchoolForm' = FormField(SchoolForm, label='Información del colegio')
 
-class AllergyForm(FlaskForm):
+class AllergyForm(Form):
     Allergy: str = StringField('Alergia', validators=[DataRequired(), Length(max=100)])
 
-class ParentForm(FlaskForm):
+class ParentForm(Form):
     Person: 'PersonForm' = FormField(PersonForm)
     Ocuppation: str = StringField('Ocupación', validators=[DataRequired(), Length(max=100)])
 
-class GodparentForm(FlaskForm):
+class GodparentForm(Form):
     Person: 'PersonForm' = FormField(PersonForm)
 
-class HealthInformationForm(FlaskForm):
+class HealthInformationForm(Form):
     ImportantAspects = TextAreaField('Aspectos Importantes de Salud', validators=[Optional()])
     Allergy = FieldList(FormField(AllergyForm), 'Alergias', min_entries=1)
     IDBloodType = SelectField('Tipo de Sangre', validators=[DataRequired()], choices=[], coerce=int)
@@ -35,7 +35,7 @@ class HealthInformationForm(FlaskForm):
         self.IDBloodType.choices = [(item.IDBloodType, item.BloodType) for item in dal.get_all_blood_types()]
 
 # --- Formulario Principal ---
-class DataSheetForm(FlaskForm):
+class DataSheetForm(Form):
     DataSheetInformation: str = TextAreaField('Información Adicional (Ficha)', validators=[Optional()])
 
 class CatechizingForm(FlaskForm):
@@ -68,7 +68,7 @@ class CatechizingForm(FlaskForm):
         # TODO: Change when the login is working
         self.IDClass.choices = [(item.IDClass, f"{item.Level.Name}: {', '.join([sch.DayOfTheWeek.DayOfTheWeek + ': ' + sch.StartHour + ' - ' + sch.EndHour for sch in item.Schedule])}") for item in dal.get_classes_by_parish_id(dal.get_parish_priest_by_id(2).IDParish)]
 
-class ScheduleForm(FlaskForm):
+class ScheduleForm(Form):
     IDDayOfTheWeek = SelectField('Día de la semana', coerce=int)
     StartHour = TimeField('Hora de inicio')
     EndHour = TimeField('Hora de fin')

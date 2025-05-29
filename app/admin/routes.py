@@ -17,6 +17,7 @@ def dashboard():
 def register_parish_priest():
     form = ParishPriestForm(request.form)
     if request.method == 'POST' and form.validate_on_submit():
+        form.User.Role.Role.data = "ParishPriest"
         parish_priest = ParishPriestDTO.from_other_obj(form, depth=-1, custom_var_path="data")
         parish_priest.Parish = dal.get_parish_by_id(parish_priest.IDParish)
 
@@ -41,6 +42,7 @@ def register_parish_priest():
             return render_template('admin/register_parish_priest.html', title='Registrar Sacerdote', form=form)
         
         flash(f'¡Sacerdote {parish_priest.Person.FirstName} {parish_priest.Person.FirstSurname} registrado exitosamente!', 'success')
+        return redirect(url_for("admin.dashboard"))
 
     return render_template('admin/register_parish_priest.html', title='Registrar Sacerdote', form=form)
 
@@ -49,6 +51,7 @@ def register_parish_priest():
 def register_catechist():
     form = CatechistForm(request.form)
     if request.method == 'POST' and form.validate_on_submit():
+        form.User.Role.Role.data = "Catechist"
         catechist = CatechistDTO.from_other_obj(form, depth=-1, custom_var_path="data")
 
         try:

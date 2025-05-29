@@ -105,7 +105,7 @@ class SQLAlchemyDAL(IDataAccessLayer):
     def get_parish_by_id(self, parish_id: int) -> Optional[ParishDTO]:
         return ParishDTO.from_other_obj(self.db.query(Parish).filter_by(IDParish=parish_id).first())
 
-    def get_all_parishes(self, include: list[str]) -> List[ParishDTO]:
+    def get_all_parishes(self, include: list[str] = []) -> List[ParishDTO]:
         return [ParishDTO.from_other_obj(parish, include=include, exclude=["Address.Location.Person"]) for parish in self.db.query(Parish).all()]
 
     def update_parish(self, parish_id: int, parish_data: ParishDTO) -> Optional[ParishDTO]:
@@ -320,7 +320,7 @@ class SQLAlchemyDAL(IDataAccessLayer):
     def get_class_period_by_id(self, period_id: int) -> Optional[ClassPeriodDTO]:
         return ClassPeriodDTO.from_other_obj(self.db.query(ClassPeriod).filter_by(IDClassPeriod=period_id).one_or_none())
     
-    def get_classes_by_parish_id(self, parish_id: int, include: list[str]) -> List[ClassDTO]:
+    def get_classes_by_parish_id(self, parish_id: int, include: list[str] = []) -> List[ClassDTO]:
         cursor = self.db.execute(text("SET NOCOUNT ON; EXEC [ClassInformation].[sp_ClassesInParish] @IDParish = :id; SET NOCOUNT OFF"), {"id": parish_id})
         class_ids = cursor.fetchall()
         results = []

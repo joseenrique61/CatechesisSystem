@@ -5,10 +5,10 @@ from app.main.data.dal.sql_server.sql_models import Parish
 from werkzeug.security import generate_password_hash
 from app import dal
 
-class RoleForm(FlaskForm):
+class RoleForm(Form):
     Role = StringField("")
 
-class UserForm(FlaskForm):
+class UserForm(Form):
     Username = StringField('Nombre de usuario', [validators.Length(min=1, max=100)])
     Password = PasswordField('Contraseña', [
             validators.DataRequired(),
