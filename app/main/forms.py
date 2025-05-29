@@ -1,19 +1,21 @@
-from wtforms import Form, StringField, validators, FormField, DateField, RadioField, SubmitField, SelectField, FieldList
+from wtforms import Form, HiddenField, StringField, validators, FormField, DateField, RadioField, SubmitField, SelectField, FieldList
 from wtforms.fields import EmailField
 from flask_wtf.file import FileAllowed, FileField, FileRequired
 from flask_wtf import FlaskForm
 from app import dal
+from app.main.data.mapper import Mappable
+from datetime import datetime
 
 class LocationForm(Form):
-    Country = StringField('País', [validators.Length(min=1, max=100)])
-    Province = StringField('Provincia', [validators.Length(min=1, max=100)])
-    State = StringField('Estado', [validators.Length(min=1, max=100)])
+    Country: str = StringField('País', [validators.Length(min=1, max=100)])
+    Province: str = StringField('Provincia', [validators.Length(min=1, max=100)])
+    State: str = StringField('Estado', [validators.Length(min=1, max=100)])
     
 class AddressForm(Form):
-    MainStreet = StringField('Calle principal', [validators.Length(min=1, max=100)])
-    Number = StringField('Número', [validators.Length(min=1, max=10)])
-    SecondStreet = StringField('Calle secundaria', [validators.Length(min=1, max=100)])
-    Location = FormField(LocationForm, label='Ubicación')
+    MainStreet: str = StringField('Calle principal', [validators.Length(min=1, max=100)])
+    Number: str = StringField('Número', [validators.Length(min=1, max=10)])
+    SecondStreet: str = StringField('Calle secundaria', [validators.Length(min=1, max=100)])
+    Location: 'LocationForm' = FormField(LocationForm, label='Ubicación')
 
 class PhoneNumberTypeForm(Form):
     PhoneNumberType = SelectField('Tipo de teléfono')
@@ -48,3 +50,22 @@ class ParishForm(FlaskForm):
     Address = FormField(AddressForm, label='Dirección')
     Classroom = FieldList(FormField(ClassroomForm), min_entries=2, label='Aulas')
     Submit = SubmitField('Registrar')
+
+
+# --- Update forms ---
+
+class UpdateFormBase(FlaskForm, Mappable):
+    pass
+
+class PersonUpdateForm(UpdateFormBase):
+    FirstName: str = HiddenField(StringField('Primer nombre', [validators.Length(min=1, max=100)]))
+    MiddleName: str = HiddenField(StringField('Segundo nombre', [validators.Length(min=1, max=100)]))
+    FirstSurname: str = HiddenField(StringField('Primer apellido', [validators.Length(min=1, max=100)]))
+    SecondSurname: str = HiddenField(StringField('Segundo Apellido', [validators.Length(min=1, max=100)]))
+    # BirthDate = HiddenField("", validators=[validators.DataRequired()])
+    BirthLocation: 'LocationForm' = HiddenField(FormField(LocationForm, label='Lugar de nacimiento'))
+    DNI: str = HiddenField(StringField('Cédula', [validators.Length(min=1, max=10)]))
+    Gender: str = HiddenField(RadioField('Género', choices=[('M', 'Masculino'), ('F', 'Femenino')]))
+    Address: 'AddressForm' = FormField(AddressForm, label='Dirección de vivienda')
+    PhoneNumber: str = FormField(PhoneNumberForm, label="Número de teléfono")
+    EmailAddress: str = EmailField('Correo electrónico', [validators.Length(min=1, max=100)])

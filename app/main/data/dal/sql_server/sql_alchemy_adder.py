@@ -138,6 +138,7 @@ class DBManager:
         model_instance: SQLAlchemyModel,
         is_model_func_override: Optional[Callable[[Any], bool]] = None,
         ignore_duplicate_error_for: list[str] = [],
+        exclude: list[str] = [],
         checked_objects: Optional[set[int]] = None,
         separated_objects: Optional[dict[int, list[SQLAlchemyModel]]] = None, 
         current_object: str = ""
@@ -168,6 +169,9 @@ class DBManager:
                 attr_name = rel_prop.key
                 temp_current_attr_name = f"{current_object}{'.' if current_object != '' else ''}{attr_name}"
                 
+                if temp_current_attr_name in exclude:
+                    continue
+                
                 is_one_to_many = False
                 
                 try:
@@ -197,6 +201,7 @@ class DBManager:
                                 item_in_list,
                                 is_model_func_override, # Pasar el override
                                 ignore_duplicate_error_for,
+                                exclude,
                                 checked_objects,
                                 separated_objects = separated_objects,
                                 current_object=temp_current_attr_name
@@ -227,6 +232,7 @@ class DBManager:
                             attr_value,
                             is_model_func_override, # Pasar el override
                             ignore_duplicate_error_for,
+                            exclude,
                             checked_objects,
                             separated_objects = separated_objects,
                             current_object=temp_current_attr_name
@@ -254,6 +260,7 @@ class DBManager:
                     item,
                     is_model_func_override, # Pasar el override
                     ignore_duplicate_error_for=ignore_duplicate_error_for,
+                    exclude=exclude,
                     checked_objects=checked_objects,
                     separated_objects = separated_objects,
                     current_object=f"{current_object}{'.' if current_object != '' else ''}{type(item).__name__}"

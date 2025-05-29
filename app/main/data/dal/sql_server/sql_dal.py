@@ -214,7 +214,7 @@ class SQLAlchemyDAL(IDataAccessLayer):
             raise
 
     def get_catechizing_by_id(self, catechizing_id: int) -> Optional[CatechizingDTO]:
-        pass # ID se refiere a Person.IDPerson
+        return CatechizingDTO.from_other_obj(self.db.query(Catechizing).filter_by(IDCatechizing=catechizing_id).one_or_none(), include=["Parent", "Godparent", "Person.Address", "Person.Address.Location", "Person.PhoneNumber", "Person.PhoneNumberType", "SchoolClassYear", "SchoolClassYear.School", "SchoolClassYear.School.Address", "SchoolClassYear.School.Address.Location", "HealthInformation.Allergy", "HealthInformation.EmergencyContact", "HealthInformation.EmergencyContact.BirthLocation", "HealthInformation.EmergencyContact.Address", "HealthInformation.EmergencyContact.Address.Location", "HealthInformation.EmergencyContact.PhoneNumber", "HealthInformation.EmergencyContact.PhoneNumberType"])
 
     def get_catechizings_by_class(self, class_id: int) -> List[CatechizingDTO]:
         pass
@@ -223,7 +223,49 @@ class SQLAlchemyDAL(IDataAccessLayer):
         pass
 
     def update_catechizing(self, catechizing_id: int, catechizing_data: CatechizingDTO) -> Optional[CatechizingDTO]:
-        pass
+        try:
+            catechizing_from_db = self.db.query(Catechizing).filter_by(IDCatechizing=catechizing_id).one_or_none()
+
+            catechizing_from_db.Class = self.db.query(Class).filter_by(IDClass=catechizing_data.IDClass).one_or_none()
+            catechizing_from_db.SiblingsNumber = catechizing_data.SiblingsNumber
+            catechizing_from_db.PayedLevelCourse = catechizing_data.PayedLevelCourse
+            catechizing_from_db.Person.EmailAddress = catechizing_data.Person.EmailAddress
+
+            healthInformation = HealthInformation.from_other_obj(catechizing_data.HealthInformation, include=["Allergy"])
+            healthInformation_from_db = self.db.query(HealthInformation).filter_by(IDCatechizing=catechizing_id).one_or_none()
+            healthInformation_from_db.Allergy = [DBManager.get_or_create(self.db, allergy, exclude=["HealthInformation"])[0] for allergy in healthInformation.Allergy]
+            self.db.flush()
+
+            healthInformation_from_db.EmergencyContact, _, _ = DBManager.get_or_create(self.db, healthInformation.EmergencyContact, ignore_duplicate_error_for=[""], exclude=["HealthInformation"])
+            self.db.flush()
+
+            healthInformation_from_db.ImportantAspects = healthInformation.ImportantAspects
+            self.db.flush()
+
+            dataSheet_from_db = self.db.query(DataSheet).filter_by(IDCatechizing=catechizing_id).one_or_none()
+            dataSheet_from_db.DataSheetInformation = catechizing_data.DataSheet.DataSheetInformation
+            
+            address = Address.from_other_obj(catechizing_data.Person.Address)
+            address, _, _ = DBManager.get_or_create(self.db, address)
+
+            catechizing_from_db.Person.Address = address
+            
+            phoneNumber = PhoneNumber.from_other_obj(catechizing_data.Person.PhoneNumber)
+            phoneNumber, _, _ = DBManager.get_or_create(self.db, phoneNumber)
+
+            catechizing_from_db.Person.PhoneNumber = phoneNumber
+
+            schoolClassYear = SchoolClassYear.from_other_obj(catechizing_data.SchoolClassYear)
+            schoolClassYear, _, _ = DBManager.get_or_create(self.db, schoolClassYear)
+
+            catechizing_from_db.SchoolClassYear = schoolClassYear
+
+            self.db.flush()
+            self.db.commit()
+
+            return CatechizingDTO.from_other_obj(catechizing_from_db), True
+        except:
+            raise
 
     def delete_catechizing(self, catechizing_id: int) -> bool:
         pass

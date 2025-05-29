@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, session, redirect, url_for, flash
 from app.main.data.duplicate_column_exception import DuplicateColumnException
-from app.parish_priest.forms import CatechizingForm, ClassForm, CatechistForm, SupportPersonForm
+from app.parish_priest.forms import CatechizingForm, CatechizingUpdateForm, ClassForm, CatechistForm, SupportPersonForm
 from app.main.data.dtos.base_dtos import CatechizingDTO, ClassDTO, CatechistDTO, SupportPersonDTO
 from app import dal
 
@@ -35,6 +35,40 @@ def register_catechizing():
 
     return render_template('parish_priest/register_catechizing.html', title='Registrar Catequizando', form=form)
 
+@bp.route('/catechizing/update/<id>', methods=['GET', 'POST'])
+def update_catechizing(id: int):
+    if request.method == "GET":
+        catechizing_temp = dal.get_catechizing_by_id(id)
+        form = CatechizingUpdateForm(obj=catechizing_temp)
+    else:
+        form = CatechizingUpdateForm(request.form)
+
+    if request.method == 'POST' and form.validate_on_submit():
+        catechizing = CatechizingDTO.from_other_obj(form, depth=-1, custom_var_path="data", exclude=["Person.BirthLocation", "Person.BirthDate", "Parent", "Godparent"], include=["Parent", "Godparent", "HealthInformation.Allergy"])
+        # catechizing = CatechizingDTO()
+        # form.populate_obj(catechizing)
+
+        try:
+            catechizing, _ = dal.update_catechizing(id, catechizing)
+        except DuplicateColumnException as e:
+            print(f"Error inserting catechizing: {e}")
+
+            match e.table:
+                case "Parent":
+                    error_message = "Se ha ingresado el mismo nombre y/o DNI de un padre del catequizando en un padrino."
+                case "Person":
+                    match list(e.values.keys())[0]:
+                        case "DNI":
+                            error_message = f"La persona con el DNI {e.values['DNI']} ya existe."
+                        case "FirstName":
+                            error_message = f"Ya existe la persona {e.values['FirstName']} {e.values['FirstSurname']}."
+
+            flash(error_message, 'danger')
+            return render_template('parish_priest/update_catechizing.html', title='Actualizar Catequizando', form=form)
+
+        flash(f'¡Catequizando {catechizing.Person.FirstName} {catechizing.Person.FirstSurname} actualizado exitosamente!', 'success')
+
+    return render_template('parish_priest/update_catechizing.html', title='Actualizar Catequizando', form=form)
 
 @bp.route('/class/create', methods=['GET', 'POST'])
 def register_class():

@@ -153,7 +153,7 @@ class PersonDTO(BaseDTO):
     MiddleName: str
     FirstSurname: str
     SecondSurname: str
-    BirthDate: datetime.date
+    BirthDate: Optional[datetime.date] = None
     DNI: str
     Gender: str
     EmailAddress: str

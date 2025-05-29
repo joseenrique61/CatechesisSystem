@@ -372,7 +372,7 @@ class Person(BaseModel):
     MiddleName: Mapped[str] = mapped_column(Unicode(100, 'Modern_Spanish_CI_AS'))
     FirstSurname: Mapped[str] = mapped_column(Unicode(100, 'Modern_Spanish_CI_AS'))
     SecondSurname: Mapped[str] = mapped_column(Unicode(100, 'Modern_Spanish_CI_AS'))
-    BirthDate: Mapped[datetime.date] = mapped_column(Date)
+    BirthDate: Mapped[Optional[datetime.date]] = mapped_column(Date)
     IDBirthLocation: Mapped[int] = mapped_column(Integer)
     DNI: Mapped[str] = mapped_column(String(10, 'Modern_Spanish_CI_AS'))
     Gender: Mapped[str] = mapped_column(CHAR(1, 'Modern_Spanish_CI_AS'))
