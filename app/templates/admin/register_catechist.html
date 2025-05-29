@@ -1,22 +1,185 @@
 {% extends "base.html" %}
+{# {% from "_form_helpers.html" import render_field, render_radio_field, render_date_field %} # Opcional para macros #}
+
+{% block title %}{{ title if title else "Registrar Catequista" }}{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-md-10 col-lg-10">
-        <div class="card shadow-sm">
+    <div class="col-lg-10 col-xl-8"> {# Ancho similar al del párroco #}
+        <div class="card shadow">
+            <div class="card-header">
+                <h3 class="card-title">{{ title if title else "Registrar Nuevo Catequista" }}</h3>
+            </div>
             <div class="card-body">
-                <h2 class="card-title text-center mb-4">{{ title }}</h2>
-                {% from "_form_helpers.html" import render_field %}
-                <form method=post>
-                    {% for field in form %}
-                        {% if field.type == 'FormField' %}
-                            {% for field1 in field %}
-                                {{ render_field(field1) }}
-                            {% endfor %}
-                        {% else %}
-                            {{ render_field(field) }}
-                        {% endif %}
-                    {% endfor %}
+                <form method="POST" novalidate> {# Asumiendo que no hay subida de archivos para el catequista directamente #}
+                    {{ form.hidden_tag() }} {# CSRF token #}
+
+                    {# --- Sección Datos de Usuario --- #}
+                    <fieldset class="mb-4 border p-3">
+                        <legend class="w-auto px-2 h5">{{ form.User.label.text }}</legend>
+                        <div class="mb-3">
+                            {{ form.User.Username.label(class="form-label") }}
+                            {{ form.User.Username(class="form-control" + (" is-invalid" if form.User.Username.errors else "")) }}
+                            {% if form.User.Username.errors %}<div class="invalid-feedback">{% for e in form.User.Username.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.User.Password.label(class="form-label") }}
+                                {{ form.User.Password(class="form-control" + (" is-invalid" if form.User.Password.errors else "")) }}
+                                {% if form.User.Password.errors %}<div class="invalid-feedback">{% for e in form.User.Password.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.User.ConfirmPassword.label(class="form-label") }}
+                                {{ form.User.ConfirmPassword(class="form-control" + (" is-invalid" if form.User.ConfirmPassword.errors else "")) }}
+                                {% if form.User.ConfirmPassword.errors %}<div class="invalid-feedback">{% for e in form.User.ConfirmPassword.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
+                            </div>
+                        </div>
+                        {# El campo Role no se renderiza aquí, se maneja internamente #}
+                    </fieldset>
+
+                    {# --- Sección Datos Personales del Catequista --- #}
+                    <fieldset class="mb-4 border p-3">
+                        <legend class="w-auto px-2 h5">{{ form.Person.label.text }}</legend>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.Person.FirstName.label(class="form-label") }}
+                                {{ form.Person.FirstName(class="form-control" + (" is-invalid" if form.Person.FirstName.errors else "")) }}
+                                {% if form.Person.FirstName.errors %}<div class="invalid-feedback">{% for e in form.Person.FirstName.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.Person.MiddleName.label(class="form-label") }}
+                                {{ form.Person.MiddleName(class="form-control" + (" is-invalid" if form.Person.MiddleName.errors else "")) }}
+                                {% if form.Person.MiddleName.errors %}<div class="invalid-feedback">{% for e in form.Person.MiddleName.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.Person.FirstSurname.label(class="form-label") }}
+                                {{ form.Person.FirstSurname(class="form-control" + (" is-invalid" if form.Person.FirstSurname.errors else "")) }}
+                                {% if form.Person.FirstSurname.errors %}<div class="invalid-feedback">{% for e in form.Person.FirstSurname.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.Person.SecondSurname.label(class="form-label") }}
+                                {{ form.Person.SecondSurname(class="form-control" + (" is-invalid" if form.Person.SecondSurname.errors else "")) }}
+                                {% if form.Person.SecondSurname.errors %}<div class="invalid-feedback">{% for e in form.Person.SecondSurname.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
+                            </div>
+                        </div>
+                         <div class="row">
+                            <div class="col-md-4 mb-3">
+                                {{ form.Person.DNI.label(class="form-label") }}
+                                {{ form.Person.DNI(class="form-control" + (" is-invalid" if form.Person.DNI.errors else "")) }}
+                                {% if form.Person.DNI.errors %}<div class="invalid-feedback">{% for e in form.Person.DNI.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                {{ form.Person.BirthDate.label(class="form-label") }}
+                                {{ form.Person.BirthDate(class="form-control" + (" is-invalid" if form.Person.BirthDate.errors else "")) }}
+                                {% if form.Person.BirthDate.errors %}<div class="invalid-feedback">{% for e in form.Person.BirthDate.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                {{ form.Person.Gender.label(class="form-label d-block") }} {# d-block para que el label ocupe toda la línea #}
+                                {% for subfield in form.Person.Gender %}
+                                <div class="form-check form-check-inline">
+                                    {{ subfield(class="form-check-input" + (" is-invalid" if form.Person.Gender.errors else "")) }}
+                                    {{ subfield.label(class="form-check-label") }}
+                                </div>
+                                {% endfor %}
+                                {% if form.Person.Gender.errors %}<div class="invalid-feedback d-block">{% for e in form.Person.Gender.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
+                            </div>
+                        </div>
+
+                        {# Lugar de Nacimiento (sub-fieldset) #}
+                        <fieldset class="mb-3 border p-2">
+                            <legend class="w-auto px-2 h6">{{ form.Person.BirthLocation.label.text }}</legend>
+                            {% set bl_form = form.Person.BirthLocation %} {# Alias para acortar #}
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    {{ bl_form.Country.label(class="form-label") }}
+                                    {{ bl_form.Country(class="form-control form-control-sm" + (" is-invalid" if bl_form.Country.errors else "")) }}
+                                    {% if bl_form.Country.errors %}<div class="invalid-feedback">{% for e in bl_form.Country.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    {{ bl_form.Province.label(class="form-label") }}
+                                    {{ bl_form.Province(class="form-control form-control-sm" + (" is-invalid" if bl_form.Province.errors else "")) }}
+                                    {% if bl_form.Province.errors %}<div class="invalid-feedback">{% for e in bl_form.Province.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    {{ bl_form.State.label(class="form-label") }}
+                                    {{ bl_form.State(class="form-control form-control-sm" + (" is-invalid" if bl_form.State.errors else "")) }}
+                                    {% if bl_form.State.errors %}<div class="invalid-feedback">{% for e in bl_form.State.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
+                                </div>
+                            </div>
+                        </fieldset>
+
+                        {# Dirección de Vivienda (sub-fieldset) #}
+                        <fieldset class="mb-3 border p-2">
+                            <legend class="w-auto px-2 h6">{{ form.Person.Address.label.text }}</legend>
+                            {% set addr_form = form.Person.Address %} {# Alias #}
+                             <div class="mb-3">
+                                {{ addr_form.MainStreet.label(class="form-label") }}
+                                {{ addr_form.MainStreet(class="form-control" + (" is-invalid" if addr_form.MainStreet.errors else "")) }}
+                                {% if addr_form.MainStreet.errors %}<div class="invalid-feedback">{% for e in addr_form.MainStreet.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    {{ addr_form.Number.label(class="form-label") }}
+                                    {{ addr_form.Number(class="form-control" + (" is-invalid" if addr_form.Number.errors else "")) }}
+                                    {% if addr_form.Number.errors %}<div class="invalid-feedback">{% for e in addr_form.Number.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    {{ addr_form.SecondStreet.label(class="form-label") }}
+                                    {{ addr_form.SecondStreet(class="form-control" + (" is-invalid" if addr_form.SecondStreet.errors else "")) }}
+                                    {% if addr_form.SecondStreet.errors %}<div class="invalid-feedback">{% for e in addr_form.SecondStreet.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
+                                </div>
+                            </div>
+                            {# Ubicación de la Dirección de Vivienda (sub-sub-fieldset) #}
+                            <fieldset class="mb-3 border p-2">
+                                <legend class="w-auto px-2 small">{{ addr_form.Location.label.text }}</legend>
+                                {% set addr_loc_form = addr_form.Location %} {# Alias #}
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        {{ addr_loc_form.Country.label(class="form-label") }}
+                                        {{ addr_loc_form.Country(class="form-control form-control-sm" + (" is-invalid" if addr_loc_form.Country.errors else "")) }}
+                                        {% if addr_loc_form.Country.errors %}<div class="invalid-feedback">{% for e in addr_loc_form.Country.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        {{ addr_loc_form.Province.label(class="form-label") }}
+                                        {{ addr_loc_form.Province(class="form-control form-control-sm" + (" is-invalid" if addr_loc_form.Province.errors else "")) }}
+                                        {% if addr_loc_form.Province.errors %}<div class="invalid-feedback">{% for e in addr_loc_form.Province.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        {{ addr_loc_form.State.label(class="form-label") }}
+                                        {{ addr_loc_form.State(class="form-control form-control-sm" + (" is-invalid" if addr_loc_form.State.errors else "")) }}
+                                        {% if addr_loc_form.State.errors %}<div class="invalid-feedback">{% for e in addr_loc_form.State.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
+                                    </div>
+                                </div>
+                            </fieldset>
+                        </fieldset>
+                        
+                        {# Teléfono y Correo #}
+                        <div class="row">
+                             <div class="col-md-7 mb-3"> {# Más ancho para Teléfono + Tipo #}
+                                {{ form.Person.PhoneNumber.PhoneNumber.label(class="form-label") }}
+                                <div class="input-group">
+                                    {# Asumiendo que el form.Person.PhoneNumber.PhoneNumberType.PhoneNumberType es el SelectField #}
+                                    {% set ph_type_field = form.Person.PhoneNumber.PhoneNumberType.PhoneNumberType %}
+                                    {{ ph_type_field(class="form-select" + (" is-invalid" if ph_type_field.errors else ""), style="max-width: 150px;") }}
+
+                                    {{ form.Person.PhoneNumber.PhoneNumber(class="form-control" + (" is-invalid" if form.Person.PhoneNumber.PhoneNumber.errors else ""), placeholder="Número") }}
+                                </div>
+                                {% if form.Person.PhoneNumber.PhoneNumber.errors %}<div class="invalid-feedback d-block">{% for e in form.Person.PhoneNumber.PhoneNumber.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
+                                {% if ph_type_field.errors %}<div class="invalid-feedback d-block">{% for e in ph_type_field.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
+                            </div>
+                            <div class="col-md-5 mb-3">
+                                {{ form.Person.EmailAddress.label(class="form-label") }}
+                                {{ form.Person.EmailAddress(class="form-control" + (" is-invalid" if form.Person.EmailAddress.errors else "")) }}
+                                {% if form.Person.EmailAddress.errors %}<div class="invalid-feedback">{% for e in form.Person.EmailAddress.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
+                            </div>
+                        </div>
+                    </fieldset>
+                    
+                    <div class="d-grid">
+                        {{ form.Submit(class="btn btn-primary btn-lg") }}
+                    </div>
                 </form>
             </div>
         </div>

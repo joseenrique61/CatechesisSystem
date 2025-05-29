@@ -25,7 +25,7 @@ class PhoneNumberTypeForm(Form):
         self.PhoneNumberType.choices = [phone_type.PhoneNumberType for phone_type in dal.get_all_phone_number_types()]
     
 class PhoneNumberForm(Form):
-    PhoneNumber = StringField('Teléfono', [validators.Length(min=1, max=15)])
+    PhoneNumber = StringField('Teléfono', [validators.Length(min=10, max=10)])
     PhoneNumberType = FormField(PhoneNumberTypeForm, label="Tipo de teléfono")
 
 class PersonForm(Form):
@@ -35,7 +35,7 @@ class PersonForm(Form):
     SecondSurname = StringField('Segundo Apellido', [validators.Length(min=1, max=100)])
     BirthDate = DateField('Fecha de nacimiento', format='%Y-%m-%d', validators=[validators.DataRequired()])
     BirthLocation = FormField(LocationForm, label='Lugar de nacimiento')
-    DNI = StringField('Cédula', [validators.Length(min=1, max=10)])
+    DNI = StringField('Cédula', [validators.Length(min=10, max=10)])
     Gender = RadioField('Género', choices=[('M', 'Masculino'), ('F', 'Femenino')], default="M")
     Address = FormField(AddressForm, label='Dirección de vivienda')
     PhoneNumber = FormField(PhoneNumberForm, label="Número de teléfono")
@@ -62,9 +62,8 @@ class PersonUpdateForm(UpdateFormBase):
     MiddleName: str = HiddenField(StringField('Segundo nombre', [validators.Length(min=1, max=100)]))
     FirstSurname: str = HiddenField(StringField('Primer apellido', [validators.Length(min=1, max=100)]))
     SecondSurname: str = HiddenField(StringField('Segundo Apellido', [validators.Length(min=1, max=100)]))
-    # BirthDate = HiddenField("", validators=[validators.DataRequired()])
     BirthLocation: 'LocationForm' = HiddenField(FormField(LocationForm, label='Lugar de nacimiento'))
-    DNI: str = HiddenField(StringField('Cédula', [validators.Length(min=1, max=10)]))
+    DNI: str = HiddenField(StringField('Cédula', [validators.Length(min=10, max=10)]))
     Gender: str = HiddenField(RadioField('Género', choices=[('M', 'Masculino'), ('F', 'Femenino')]))
     Address: 'AddressForm' = FormField(AddressForm, label='Dirección de vivienda')
     PhoneNumber: str = FormField(PhoneNumberForm, label="Número de teléfono")
