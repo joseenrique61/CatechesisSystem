@@ -2,7 +2,7 @@ from wtforms import Form, FieldList, IntegerField, HiddenField, StringField, Tim
 from wtforms.validators import DataRequired, Length, Optional, NumberRange
 from flask_wtf import FlaskForm
 from flask import session
-from app.main.forms import PersonForm, PersonUpdateForm, AddressForm, UpdateFormBase
+from app.main.forms import PersonForm, PersonUpdateForm, AddressForm
 from app.auth.forms import UserForm
 from app import dal
 
@@ -123,7 +123,7 @@ class SupportPersonForm(FlaskForm):
 
 # --- Update forms ---
 
-class HealthInformationUpdateForm(UpdateFormBase):
+class HealthInformationUpdateForm(Form):
     ImportantAspects: str = TextAreaField('Aspectos Importantes de Salud', validators=[Optional()])
     Allergy: list['AllergyForm'] = FieldList(FormField(AllergyForm), 'Alergias', min_entries=1)
     IDBloodType: int = HiddenField(SelectField('Tipo de Sangre', validators=[DataRequired()], choices=[], coerce=int))
@@ -133,7 +133,7 @@ class HealthInformationUpdateForm(UpdateFormBase):
         super(HealthInformationUpdateForm, self).__init__(*args, **kwargs)
         self.IDBloodType.choices = [(item.IDBloodType, item.BloodType) for item in dal.get_all_blood_types()]
 
-class CatechizingUpdateForm(UpdateFormBase):
+class CatechizingUpdateForm(FlaskForm):
     Person: 'PersonUpdateForm' = FormField(PersonUpdateForm, 'Datos Personales del Catequizando')
     IsLegitimate: bool = HiddenField(BooleanField('¿Es Hijo(a) Legítimo(a)?', default=False))
     SiblingsNumber: int = IntegerField('Número de Hermanos', validators=[DataRequired(), NumberRange(min=0)])

@@ -149,13 +149,13 @@ class HealthInformationDTO(BaseDTO):
 
 class PersonDTO(BaseDTO):
     IDPerson: Optional[int] = None
-    FirstName: str
-    MiddleName: str
-    FirstSurname: str
-    SecondSurname: str
+    FirstName: Optional[str] = None
+    MiddleName: Optional[str] = None
+    FirstSurname: Optional[str] = None
+    SecondSurname: Optional[str] = None
     BirthDate: Optional[datetime.date] = None
-    DNI: str
-    Gender: str
+    DNI: Optional[str] = None
+    Gender: Optional[str] = None
     EmailAddress: str
     Address: Optional['AddressDTO'] = None
     BirthLocation: Optional['LocationDTO'] = None

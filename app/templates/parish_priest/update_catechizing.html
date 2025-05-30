@@ -1,25 +1,334 @@
 {% extends "base.html" %}
 
+{% block title %}{{ title if title else "Actualizar Catequizando" }}{% endblock %}
+
+{% block head_extra %}
+<style>
+    .fieldlist-entry {
+        border: 1px solid #e0e0e0;
+        padding: 0.75rem; /* Un poco menos de padding para entradas simples como alergias */
+        margin-bottom: 0.75rem;
+        border-radius: 0.25rem;
+        background-color: #f8f9fa;
+    }
+    .nested-fieldset {
+        border: 1px dashed #ced4da;
+        padding: 0.75rem;
+        margin-top: 0.5rem;
+        margin-bottom: 1rem;
+    }
+    .nested-fieldset legend {
+        font-size: 0.85rem;
+        color: #6c757d;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-md-10 col-lg-10">
-        <div class="card shadow-sm">
+    <div class="col-xl-9 col-lg-10"> {# Ancho adecuado para los campos visibles #}
+        <div class="card shadow">
+            <div class="card-header">
+                <h3 class="card-title">
+                    {{ title if title else "Actualizar Datos del Catequizando" }}
+                    {# Mostrar el nombre del catequizando si se pasa al template #}
+                    {% if catechizing_name %}
+                        : <span class="fw-normal">{{ catechizing_name }}</span>
+                    {% endif %}
+                </h3>
+            </div>
             <div class="card-body">
-                <h2 class="card-title text-center mb-4">{{ title }}</h2>
-                {% from "_form_helpers.html" import render_field %}
-                <form method=post>
-                    {% for field in form %}
-                        {% if field.type == 'FormField' %}
-                            {% for field1 in field %}
-                                {{ render_field(field1) }}
-                            {% endfor %}
-                        {% else %}
-                            {{ render_field(field) }}
-                        {% endif %}
-                    {% endfor %}
+                <form method="POST" novalidate>
+                    {{ form.hidden_tag() }} {# CSRF token y todos los HiddenFields definidos en el form principal #}
+
+                    {# --- Campos HiddenFields del CatechizingUpdateForm (Renderizados automáticamente por hidden_tag()) --- #}
+                    {# form.IsLegitimate, form.ChildNumber, form.Parent, form.Godparent, form.HasParticularClass #}
+                    {# También los HiddenFields dentro de form.Person (PersonUpdateForm) #}
+                    <!-- {{ form.Person }} -->
+
+
+                    {# --- 1. Datos Personales del Catequizando (Solo los campos visibles de PersonUpdateForm) --- #}
+                    <fieldset class="mb-4 border p-3">
+                        <legend class="w-auto px-2 h5">{{ form.Person.label.text }}</legend>
+                        {% set p_update_form = form.Person %} {# Alias para PersonUpdateForm #}
+
+                        {# Dirección (AddressForm es visible dentro de PersonUpdateForm) #}
+                        <fieldset class="nested-fieldset p-2">
+                            <legend class="w-auto px-2 small">{{ p_update_form.Address.label.text }}</legend>
+                            {% set sch_addr_form = p_update_form.Address %}
+                            {% set size_class = 'form-control-sm' %}
+                            {% include 'partials/_address_form_fields.html' with context %}
+                        </fieldset>
+
+                        {# Teléfono (PhoneNumberForm es visible dentro de PersonUpdateForm) #}
+                        <fieldset class="nested-fieldset p-2 mt-3">
+                            <legend class="w-auto px-2 small">{{ p_update_form.PhoneNumber.label.text }}</legend>
+                            {% set ph_form = p_update_form.PhoneNumber %}
+                            {% set ph_type_field = ph_form.PhoneNumberType.PhoneNumberType %}
+                             <div class="row">
+                                <div class="col-md-5 mb-3">
+                                    {{ ph_type_field.label(class="form-label sr-only") }}
+                                    {{ ph_type_field(class="form-select form-select-sm" + (" is-invalid" if ph_type_field.errors else "")) }}
+                                    {% if ph_type_field.errors %}<div class="invalid-feedback d-block">{% for e in ph_type_field.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
+                                </div>
+                                <div class="col-md-7 mb-3">
+                                    {{ ph_form.PhoneNumber.label(class="form-label sr-only") }}
+                                    {{ ph_form.PhoneNumber(class="form-control form-control-sm" + (" is-invalid" if ph_form.PhoneNumber.errors else ""), placeholder="Número") }}
+                                    {% if ph_form.PhoneNumber.errors %}<div class="invalid-feedback d-block">{% for e in ph_form.PhoneNumber.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
+                                </div>
+                            </div>
+                        </fieldset>
+                        
+                        {# Correo Electrónico (EmailField es visible en PersonUpdateForm) #}
+                        <div class="mt-3 mb-3">
+                            {{ p_update_form.EmailAddress.label(class="form-label") }}
+                            {{ p_update_form.EmailAddress(class="form-control form-control-sm" + (" is-invalid" if p_update_form.EmailAddress.errors else "")) }}
+                            {% if p_update_form.EmailAddress.errors %}<div class="invalid-feedback">{% for e in p_update_form.EmailAddress.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
+                        </div>
+                    </fieldset>
+
+                    {# --- 2. Información General del Catequizando (Campos visibles) --- #}
+                    <fieldset class="mb-4 border p-3">
+                        <legend class="w-auto px-2 h5">Información Adicional</legend>
+                        <div class="mb-3">
+                            {{ form.SiblingsNumber.label(class="form-label") }}
+                            {{ form.SiblingsNumber(class="form-control form-control-sm" + (" is-invalid" if form.SiblingsNumber.errors else ""), type="number", min="0") }}
+                            {% if form.SiblingsNumber.errors %}<div class="invalid-feedback">{% for e in form.SiblingsNumber.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
+                        </div>
+                    </fieldset>
+                    
+                    {# --- 3. Información Escolar (SchoolClassYearForm) --- #}
+                    <fieldset class="mb-4 border p-3">
+                        <legend class="w-auto px-2 h5">{{ form.SchoolClassYear.label.text }}</legend>
+                        {% set scy_form = form.SchoolClassYear %}
+                        <div class="mb-3">
+                            {{ scy_form.SchoolYear.label(class="form-label") }}
+                            {{ scy_form.SchoolYear(class="form-control form-control-sm" + (" is-invalid" if scy_form.SchoolYear.errors else "")) }}
+                            {% if scy_form.SchoolYear.errors %}<div class="invalid-feedback">{% for e in scy_form.SchoolYear.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
+                        </div>
+
+                        <fieldset class="nested-fieldset p-2"> {# SchoolForm anidado #}
+                            <legend class="w-auto px-2 small">{{ scy_form.School.label.text }}</legend>
+                            {% set sch_form = scy_form.School %}
+                            <div class="mb-3">
+                                {{ sch_form.SchoolName.label(class="form-label") }}
+                                {{ sch_form.SchoolName(class="form-control form-control-sm" + (" is-invalid" if sch_form.SchoolName.errors else "")) }}
+                                {% if sch_form.SchoolName.errors %}<div class="invalid-feedback">{% for e in sch_form.SchoolName.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
+                            </div>
+                            {# Dirección del Colegio (AddressForm anidado) #}
+                            <fieldset class="nested-fieldset p-2">
+                                <legend class="w-auto px-2 small">{{ sch_form.Address.label.text }}</legend>
+                                {% set sch_addr_form = sch_form.Address %}
+                                {% include 'partials/_address_form_fields.html' with context %}
+                            </fieldset>
+                        </fieldset>
+                    </fieldset>
+
+                    {# --- 4. Asignación de Clase y Pago --- #}
+                    <fieldset class="mb-4 border p-3">
+                        <legend class="w-auto px-2 h5">Asignación y Administrativo</legend>
+                         <div class="row">
+                            <div class="col-md-8 mb-3">
+                                {{ form.IDClass.label(class="form-label") }}
+                                {{ form.IDClass(class="form-select" + (" is-invalid" if form.IDClass.errors else "")) }}
+                                {% if form.IDClass.errors %}<div class="invalid-feedback">{% for e in form.IDClass.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
+                            </div>
+                            <div class="col-md-4 mb-3 align-self-center">
+                                {{ form.PayedLevelCourse.label(class="form-check-label") }}
+                                <div class="form-check form-switch mt-1">
+                                    {{ form.PayedLevelCourse(class="form-check-input" + (" is-invalid" if form.PayedLevelCourse.errors else "")) }}
+                                </div>
+                                {% if form.PayedLevelCourse.errors %}<div class="invalid-feedback d-block">{% for e in form.PayedLevelCourse.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    {# --- 5. Información de Salud (HealthInformationUpdateForm) --- #}
+                    <fieldset class="mb-4 border p-3">
+                        <legend class="w-auto px-2 h5">{{ form.HealthInformation.label.text }}</legend>
+                        {% set hi_form = form.HealthInformation %}
+                        {# IDBloodType es HiddenField en HealthInformationUpdateForm, no se renderiza aquí #}
+                        
+                        <div class="mb-3">
+                            {{ hi_form.ImportantAspects.label(class="form-label") }}
+                            {{ hi_form.ImportantAspects(class="form-control form-control-sm" + (" is-invalid" if hi_form.ImportantAspects.errors else ""), rows="3") }}
+                            {% if hi_form.ImportantAspects.errors %}<div class="invalid-feedback">{% for e in hi_form.ImportantAspects.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
+                        </div>
+
+                        {# Alergias (FieldList de AllergyForm anidado en HealthInformationUpdateForm) #}
+                        <fieldset class="nested-fieldset p-2">
+                            <legend class="w-auto px-2 small">{{ hi_form.Allergy.label.text }}</legend>
+                            <div id="allergy-list" class="fieldlist-container">
+                                {% for allergy_entry_form in hi_form.Allergy %}
+                                    {% set allergy_subform = allergy_entry_form.form %}
+                                    <div class="fieldlist-entry allergy-entry" id="allergy-{{ loop.index0 }}">
+                                        <div class="input-group input-group-sm">
+                                            {{ allergy_subform.Allergy(class="form-control" + (" is-invalid" if allergy_subform.Allergy.errors else ""), placeholder="Describa la alergia") }}
+                                            <button type="button" class="btn btn-outline-danger remove-entry" data-target="allergy" {% if loop.first and hi_form.Allergy.min_entries >= 1 %}disabled{% endif %}>
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </div>
+                                        {% if allergy_subform.Allergy.errors %}<div class="invalid-feedback d-block">{% for e in allergy_subform.Allergy.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            <button type="button" id="add-allergy" class="btn btn-outline-secondary btn-sm mt-2 add-entry" data-target="allergy">
+                                <i class="fas fa-plus"></i> Añadir Alergia
+                            </button>
+                        </fieldset>
+                        
+                        {# Contacto de Emergencia (PersonForm anidado en HealthInformationForm) #}
+                        <fieldset class="nested-fieldset p-2 mt-3">
+                            <legend class="w-auto px-2 small">{{ hi_form.EmergencyContact.label.text }}</legend>
+                            {% set p_form = hi_form.EmergencyContact %} {# Alias para el PersonForm del contacto emergencia #}
+                            {% include 'partials/_person_form_fields.html' %}
+                        </fieldset>
+                    </fieldset>
+                    
+                    {# --- 6. Hoja de Datos --- #}
+                    <fieldset class="mb-4 border p-3">
+                        <legend class="w-auto px-2 h5">{{ form.DataSheet.label.text }}</legend>
+                        <div class="mb-3">
+                            {{ form.DataSheet.DataSheetInformation.label(class="form-label") }}
+                            {{ form.DataSheet.DataSheetInformation(class="form-control" + (" is-invalid" if form.DataSheet.DataSheetInformation.errors else ""), rows="4") }}
+                            {% if form.DataSheet.DataSheetInformation.errors %}<div class="invalid-feedback">{% for e in form.DataSheet.DataSheetInformation.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
+                        </div>
+                    </fieldset>
+
+                    <div class="d-grid gap-2">
+                        {{ form.Submit(class="btn btn-primary btn-lg") }}
+                    </div>
                 </form>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts_extra %}
+{# Reutilizar el script genérico para FieldList, adaptado para 'allergy' #}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.add-entry').forEach(button => {
+        button.addEventListener('click', function () {
+            const targetType = this.dataset.target; // 'allergy'
+            const listContainer = document.getElementById(`${targetType}-list`);
+            const maxEntries = parseInt(this.dataset.max) || Infinity; // No hay max_entries para alergias por defecto
+
+            if (listContainer.children.length >= maxEntries) {
+                alert(`Se ha alcanzado el número máximo de ${targetType}s (${maxEntries}).`);
+                return;
+            }
+
+            let templateEntry = listContainer.querySelector(`.${targetType}-entry`);
+             if (!templateEntry && listContainer.children.length > 0) {
+                templateEntry = listContainer.firstElementChild;
+            }
+
+            if (templateEntry) {
+                const newEntry = templateEntry.cloneNode(true);
+                const newIndex = listContainer.children.length;
+
+                newEntry.id = `${targetType}-${newIndex}`;
+                
+                newEntry.querySelectorAll('input, select, textarea').forEach(field => {
+                    if (field.type === 'checkbox' || field.type === 'radio') {
+                        field.checked = false;
+                    } else if (field.tagName === 'SELECT') {
+                        field.selectedIndex = 0;
+                    } else {
+                        field.value = '';
+                    }
+                    field.classList.remove('is-invalid');
+                    
+                    // Actualizar ID y Name
+                    // Para AllergyForm, el nombre del campo es solo 'Allergy'
+                    // El nombre del FieldList es 'Allergy' dentro de 'HealthInformation'
+                    // WTForms generará: HealthInformation-Allergy-X-Allergy
+                    if (field.id) field.id = field.id.replace(new RegExp(`Allergy-\\d+-Allergy`), `Allergy-${newIndex}-Allergy`);
+                    if (field.name) field.name = field.name.replace(new RegExp(`Allergy-\\d+-Allergy`), `Allergy-${newIndex}-Allergy`);
+
+                    if (targetType === 'allergy' && field.placeholder) {
+                        field.placeholder = "Describa la alergia";
+                    }
+                });
+                
+                newEntry.querySelectorAll('.invalid-feedback').forEach(feedback => feedback.innerHTML = '');
+                listContainer.appendChild(newEntry);
+                updateRemoveButtonsState(targetType);
+            } else {
+                console.error(`No se pudo encontrar una plantilla para '${targetType}'. Asegúrate de que min_entries sea al menos 1 para AllergyForm.`);
+                alert(`Error: No se pudo añadir ${targetType}. Contacte al administrador.`);
+            }
+        });
+    });
+
+    document.querySelectorAll('.fieldlist-container').forEach(listContainer => {
+        listContainer.addEventListener('click', function (event) {
+            const removeButton = event.target.closest('.remove-entry');
+            if (removeButton) {
+                const targetType = removeButton.dataset.target; // 'allergy'
+                const entryToRemove = removeButton.closest(`.${targetType}-entry`);
+                const container = document.getElementById(`${targetType}-list`);
+                const minEntries = getMinEntriesFor(targetType);
+
+                if (container.children.length > minEntries) {
+                    entryToRemove.remove();
+                    reindexFieldListEntries(targetType);
+                    updateRemoveButtonsState(targetType);
+                }
+            }
+        });
+    });
+
+    function getMinEntriesFor(targetType) {
+        if (targetType === 'allergy') return parseInt("{{ form.HealthInformation.Allergy.min_entries }}", 10) || 0;
+        return 0;
+    }
+
+    function updateRemoveButtonsState(targetType) {
+        const listContainer = document.getElementById(`${targetType}-list`);
+        const entries = listContainer.querySelectorAll(`.${targetType}-entry`);
+        const minEntries = getMinEntriesFor(targetType);
+        entries.forEach((entry) => {
+            const removeButton = entry.querySelector('.remove-entry');
+            if (removeButton) {
+                removeButton.disabled = entries.length <= minEntries;
+            }
+        });
+    }
+
+    function reindexFieldListEntries(targetType) {
+        const listContainer = document.getElementById(`${targetType}-list`);
+        const entries = listContainer.querySelectorAll(`.${targetType}-entry`);
+        // Para AllergyForm, el nombre del FieldList es 'Allergy' y el campo dentro es 'Allergy'.
+        // El prefijo completo que genera WTForms para el campo de alergia será algo como:
+        // form.HealthInformation.Allergy.entries[X].form.Allergy.name -> HealthInformation-Allergy-X-Allergy
+
+        entries.forEach((entry, index) => {
+            entry.id = `${targetType}-${index}`; // e.g., allergy-0, allergy-1
+
+            entry.querySelectorAll('input, select, textarea').forEach(field => {
+                const baseName = "HealthInformation-Allergy"; // Prefijo del FieldList en el form principal
+                const fieldSpecificPart = field.name ? field.name.substring(field.name.lastIndexOf('-') + 1) : ""; // "Allergy"
+
+                if (field.name && field.name.startsWith(baseName)) {
+                    field.name = `${baseName}-${index}-${fieldSpecificPart}`;
+                }
+                if (field.id && field.id.startsWith(baseName)) {
+                    field.id = `${baseName}-${index}-${fieldSpecificPart}`;
+                }
+            });
+        });
+    }
+
+    // Inicializar estado de botones para alergias al cargar
+    if (document.getElementById('allergy-list')) {
+        if(document.getElementById('allergy-list').children.length > 0) {
+            reindexFieldListEntries('allergy');
+        }
+        updateRemoveButtonsState('allergy');
+    }
+});
+</script>
 {% endblock %}

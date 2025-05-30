@@ -54,10 +54,7 @@ class ParishForm(FlaskForm):
 
 # --- Update forms ---
 
-class UpdateFormBase(Form, Mappable):
-    pass
-
-class PersonUpdateForm(UpdateFormBase):
+class PersonUpdateForm(Form):
     FirstName: str = HiddenField(StringField('Primer nombre', [validators.Length(min=1, max=100)]))
     MiddleName: str = HiddenField(StringField('Segundo nombre', [validators.Length(min=1, max=100)]))
     FirstSurname: str = HiddenField(StringField('Primer apellido', [validators.Length(min=1, max=100)]))
