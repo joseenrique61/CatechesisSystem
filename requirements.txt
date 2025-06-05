@@ -2,6 +2,7 @@ annotated-types==0.7.0
 blinker==1.9.0
 click==8.1.8
 colorama==0.4.6
+dnspython==2.7.0
 Flask==3.1.0
 Flask-SQLAlchemy==3.1.1
 Flask-WTF==1.2.2
@@ -10,9 +11,11 @@ inflect==7.5.0
 itsdangerous==2.2.0
 Jinja2==3.1.6
 MarkupSafe==3.0.2
+mongoengine==0.29.1
 more-itertools==10.7.0
 pydantic==2.11.4
 pydantic_core==2.33.2
+pymongo==4.13.0
 pyodbc==5.2.0
 python-dotenv==1.1.0
 sqlacodegen==3.0.0
