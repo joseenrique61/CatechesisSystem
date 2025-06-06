@@ -131,14 +131,14 @@ class LevelDocument(Document):
     Name = StringField(required=True)
     MinAge = IntField(required=True)
     MaxAge = IntField(required=True)
-    PreviousLevel = ReferenceField('self', db_field="IDPreviousLevel")
-    TextBook = ReferenceField(TextBookDocument, required=True, db_field="IDTextBook")
+    PreviousLevel = ReferenceField('self', db_field="IDPreviousLevel") # Nombre DTO: IDPreviousLevel
+    TextBook = ReferenceField(TextBookDocument, required=True, db_field="IDTextBook") # Nombre DTO: TextBook
     meta = {'collection': 'Catechesis_Level'}
 
-class SacramentDocument(Document):
+class SacramentDocument(Document): # Define los TIPOS de sacramentos
     IDSacrament = IntField(primary_key=True)
-    Name = StringField(required=True)
-    Level = ReferenceField(LevelDocument, required=True, unique=True, db_field="IDLevel")
+    Name = StringField(required=True, unique=True)
+    Level = ReferenceField(LevelDocument, db_field="IDLevel", unique=True, required=False)
     meta = {'collection': 'Catechesis_Sacrament'}
 
 class ParishDocument(Document):
@@ -220,22 +220,32 @@ class DataSheetEmbedded(EmbeddedDocument):
 
 class CatechizingDocument(Document):
     IDCatechizing = IntField(primary_key=True)
-    Person = ReferenceField(PersonDocument, required=True, db_field="IDCatechizing") # Atributo 'Person', campo BD 'IDCatechizing'
+    # DTO: Person: Optional['PersonDTO']
+    Person = ReferenceField(PersonDocument, required=True, db_field="IDCatechizing") # Campo BD: IDCatechizing (PK de Person)
     IsLegitimate = BooleanField(required=True)
     SiblingsNumber = IntField(required=True)
     ChildNumber = IntField(required=True)
     PayedLevelCourse = BooleanField(required=True)
-    Class = ReferenceField(ClassDocument, db_field="IDClass")
-    SchoolClassYear = ReferenceField(SchoolClassYearDocument, db_field="IDSchoolClassYear")
+    # DTO: Class: Optional['ClassDTO']
+    Class = ReferenceField(ClassDocument, db_field="IDClass") # Campo BD: IDClass
+    # DTO: SchoolClassYear: Optional['SchoolClassYearDTO']
+    SchoolClassYear = ReferenceField(SchoolClassYearDocument, db_field="IDSchoolClassYear") # Campo BD: IDSchoolClassYear
 
-    DataSheet = EmbeddedDocumentField(DataSheetEmbedded)
-    HealthInformation = EmbeddedDocumentField(HealthInformationEmbedded)
+    DataSheet = EmbeddedDocumentField(DataSheetEmbedded) # Asumiendo que DataSheetEmbedded está definido
+    HealthInformation = EmbeddedDocumentField(HealthInformationEmbedded) # Asumiendo que HealthInformationEmbedded está definido
 
-    Parent = ListField(ReferenceField(ParentDocument)) # Campo en BD 'Parent', lista de IDs de Parent
-    Godparent = ListField(ReferenceField(GodparentDocument))
-    Sacrament = ListField(ReferenceField(SacramentDocument)) # Campo en BD 'Sacrament', lista de IDs de Sacrament
+    # DTO: Parent: List['ParentDTO']
+    Parent = ListField(ReferenceField(ParentDocument)) # Campo BD 'Parent', lista de IDs de Parent
+    # DTO: Godparent: List['GodparentDTO']
+    Godparent = ListField(ReferenceField(GodparentDocument)) # Campo BD 'Godparent', lista de IDs de Godparent
+
+    # DTO: Sacrament: List['SacramentDTO'] = []
+    # Esto será una lista de referencias a SacramentDocument.
+    # El campo en BD almacenará una lista de IDSacrament.
+    Sacrament = ListField(ReferenceField(SacramentDocument)) # El campo en BD se llamará 'Sacrament'
 
     meta = {'collection': 'Person_Catechizing'}
+
 
 class BaptismalCertificateDocument(Document):
     # DTO tiene IDCatechizing como PK y FK.
