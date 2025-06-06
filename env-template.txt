@@ -1,0 +1,20 @@
+# Flask Configuration
+FLASK_APP=run.py
+FLASK_DEBUG=1
+SECRET_KEY=''
+
+# DB_TYPE='mssql'
+DB_TYPE='mongodb'
+
+# SQL Server Configuration
+SQL_SERVER_DB_SERVER='localhost'
+SQL_SERVER_DB_DATABASE='ParishDatabase'
+SQL_SERVER_DB_USERNAME=''
+SQL_SERVER_DB_PASSWORD=''
+SQL_SERVER_DB_DRIVER='ODBC Driver 17 for SQL Server'
+
+# MongoDB Configuration
+MongoDB_SERVER=''
+MongoDB_DATABASE='ParishDatabase'
+MongoDB_USERNAME=''
+MongoDB_PASSWORD=''
