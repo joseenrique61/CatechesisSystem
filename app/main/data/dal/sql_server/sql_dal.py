@@ -338,7 +338,7 @@ class SQLAlchemyDAL(IDataAccessLayer):
             return False
         return True
 
-    def get_dto_by_user(self, username: int):
+    def get_dto_by_user(self, username: str):
         user = self.db.query(User).filter_by(Username=username).one_or_none()
         if user.Administrator:
             return AdministratorDTO.from_other_obj(self.db.query(Administrator).filter_by(IDUser=user.IDUser).one_or_none())

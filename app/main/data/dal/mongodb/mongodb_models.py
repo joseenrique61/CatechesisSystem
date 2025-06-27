@@ -1,107 +1,124 @@
 from mongoengine import (Document, EmbeddedDocument, StringField, IntField, DateField,
-                         BooleanField, ListField, ReferenceField, EmbeddedDocumentField,
-                         ObjectIdField)
-import datetime
+                         BooleanField, ListField, ReferenceField, EmbeddedDocumentField)
+from werkzeug.security import check_password_hash, generate_password_hash
 
-# --- Documentos de Catálogo / Entidades Independientes ---
+# --- Documentos Embebidos (Estructuras de datos anidadas) ---
+# Estas clases representan datos que, según el diagrama, existen DENTRO de otros documentos.
+# Heredan de EmbeddedDocument, no tienen PK ni 'meta' class.
 
-class LocationDocument(Document):
-    IDLocation = IntField(primary_key=True)
+class RoleDocument(EmbeddedDocument):
+    """Rol del usuario, anidado en UserDocument."""
+    Role = StringField(required=True)
+
+class LocationDocument(EmbeddedDocument):
+    """Ubicación geográfica, anidada en AddressDocument y PersonDocument."""
     Province = StringField(required=True)
     State = StringField(required=True)
     Country = StringField(required=True)
-    meta = {'collection': 'LocationInformation_Location'}
 
-class AddressDocument(Document):
-    IDAddress = IntField(primary_key=True)
+class AddressDocument(EmbeddedDocument):
+    """Dirección física, anidada en ParishDocument, PersonDocument y SchoolDocument."""
     MainStreet = StringField(required=True)
     Number = StringField(required=True)
     SecondStreet = StringField(required=True)
-    # Atributo Python 'Location', en BD se almacena en 'IDLocation'
-    Location = ReferenceField(LocationDocument, required=True, db_field="IDLocation")
-    meta = {'collection': 'LocationInformation_Address'}
+    Location = EmbeddedDocumentField(LocationDocument, required=True)
 
-class PhoneNumberTypeDocument(Document):
-    IDPhoneNumberType = IntField(primary_key=True)
+class PhoneNumberTypeDocument(EmbeddedDocument):
+    """Tipo de teléfono, anidado en PhoneNumberDocument."""
     PhoneNumberType = StringField(required=True)
-    meta = {'collection': 'PersonalInformation_PhoneNumberType'}
 
-class PhoneNumberDocument(Document):
-    IDPhoneNumer = IntField(primary_key=True) # DTO tiene 'IDPhoneNumer'
+class PhoneNumberDocument(EmbeddedDocument):
+    """Número de teléfono, anidado en PersonDocument."""
     PhoneNumber = StringField(required=True)
-    # Atributo Python 'PhoneNumberType', en BD se almacena en 'IDPhoneNumberType'
-    PhoneNumberType = ReferenceField(PhoneNumberTypeDocument, required=True, db_field="IDPhoneNumberType")
-    meta = {'collection': 'PersonalInformation_PhoneNumber'}
+    PhoneNumberType = EmbeddedDocumentField(PhoneNumberTypeDocument, required=True)
 
-class TextBookDocument(Document):
-    IDTextBook = IntField(primary_key=True)
+class TextBookDocument(EmbeddedDocument):
+    """Libro de texto, anidado en LevelDocument."""
     AuthorName = StringField(required=True)
     ImplementationDate = DateField(required=True)
     PagesNumber = IntField(required=True)
     NameBook = StringField(required=True)
-    meta = {'collection': 'Book_TextBook'}
 
-class BaptismalBookVolumeDocument(Document):
-    IDBaptismalBookVolume = IntField(primary_key=True)
+class SchoolDocument(EmbeddedDocument):
+    """Información de la escuela, anidada en SchoolClassYearDocument."""
+    SchoolName = StringField(required=True)
+    Address = EmbeddedDocumentField(AddressDocument)
+
+class SchoolClassYearDocument(EmbeddedDocument):
+    """Año escolar del catequizando, anidado en CatechizingDocument."""
+    SchoolYear = StringField(required=True)
+    School = EmbeddedDocumentField(SchoolDocument, required=True)
+
+class DayOfTheWeekDocument(EmbeddedDocument):
+    """Día de la semana, anidado en ScheduleEmbedded."""
+    DayOfTheWeek = StringField(required=True)
+
+class ScheduleEmbedded(EmbeddedDocument):
+    """Horario de una clase, anidado como lista en ClassDocument."""
+    DayOfTheWeek = EmbeddedDocumentField(DayOfTheWeekDocument, required=True)
+    StartHour = StringField(required=True)
+    EndHour = StringField(required=True)
+    Classroom = ReferenceField('ClassroomDocument', required=True, db_field="IDClassroom")
+
+class DataSheetEmbedded(EmbeddedDocument):
+    """Ficha de datos del catequizando, anidada en CatechizingDocument."""
+    DataSheetInformation = StringField(required=True)
+
+class AllergyDocument(EmbeddedDocument):
+    """Alergia, anidada como lista en HealthInformationEmbedded."""
+    Allergy = StringField(required=True)
+
+class BloodTypeDocument(EmbeddedDocument):
+    """Tipo de sangre, anidado en HealthInformationEmbedded."""
+    BloodType = StringField(required=True)
+
+class HealthInformationEmbedded(EmbeddedDocument):
+    """Información de salud del catequizando, anidada en CatechizingDocument."""
+    ImportantAspects = StringField(required=True)
+    BloodType = EmbeddedDocumentField(BloodTypeDocument)
+    EmergencyContact = ReferenceField('PersonDocument', db_field="IDEmergencyContact")
+    Allergy = ListField(EmbeddedDocumentField(AllergyDocument))
+
+class BaptismalBookVolumeDocument(EmbeddedDocument):
+    """Volumen del libro bautismal, anidado en BaptismalBookPageDocument."""
     Volume = IntField(required=True)
-    meta = {'collection': 'Certificate_BaptismalBookVolume'}
 
-class BaptismalBookPageDocument(Document):
-    IDBaptismalBookPage = IntField(primary_key=True)
+class BaptismalBookPageDocument(EmbeddedDocument):
+    """Página del libro bautismal, anidada en BaptismalCertificateDocument."""
     Page = IntField(required=True)
-    # Atributo Python 'BaptismalBookVolume', en BD se almacena en 'IDBaptismalBookVolume'
-    BaptismalBookVolume = ReferenceField(BaptismalBookVolumeDocument, required=True, db_field="IDBaptismalBookVolume")
-    meta = {'collection': 'Certificate_BaptismalBookPage'}
+    BaptismalBookVolume = EmbeddedDocumentField(BaptismalBookVolumeDocument, required=True)
+
+class AttendedClassEmbedded(EmbeddedDocument):
+    """Refleja una asistencia a clase. Anidada como lista en CatechizingDocument según el diagrama."""
+    Class = ReferenceField('ClassDocument', required=True, db_field="IDClass")
+    Date = DateField(required=True)
+
+class ParticularClassEmbedded(EmbeddedDocument):
+    """Refleja una clase particular. Anidada como lista en CatechizingDocument según el diagrama."""
+    ClassAuthorization = ReferenceField('ClassAuthorizationDocument', required=True, db_field="IDClassAuthorization")
+    IssueDate = DateField(required=True)
+    ParishPriest = ReferenceField('ParishPriestDocument', required=True, db_field="IDParishPriest")
+    Level = ReferenceField('LevelDocument', required=True, db_field="IDLevel")
+    ClassDate = DateField(required=True)
+
+# --- Documentos Principales (Colecciones de Nivel Superior en MongoDB) ---
+# Estas clases heredan de Document y representan colecciones independientes.
 
 class ClassPeriodDocument(Document):
-    IDClassPeriod = IntField(primary_key=True)
+    IDClassPeriod = IntField(primary_key=True, db_field='_id')
     StartDate = DateField(required=True)
     EndDate = DateField(required=True)
     CurrentPeriod = BooleanField(default=False)
-    meta = {'collection': 'ClassInformation_ClassPeriod'}
-
-class DayOfTheWeekDocument(Document):
-    IDDayOfTheWeek = IntField(primary_key=True)
-    DayOfTheWeek = StringField(required=True)
-    meta = {'collection': 'ClassInformation_DayOfTheWeek'}
-
-class AllergyDocument(Document):
-    IDAllergy = IntField(primary_key=True)
-    Allergy = StringField(required=True)
-    meta = {'collection': 'PersonalInformation_Allergy'}
-
-class BloodTypeDocument(Document):
-    IDBloodType = IntField(primary_key=True)
-    BloodType = StringField(required=True)
-    meta = {'collection': 'PersonalInformation_BloodType'}
-
-class RoleDocument(Document):
-    IDRole = IntField(primary_key=True)
-    Role = StringField(required=True)
-    meta = {'collection': 'User_Role'}
-
-class SchoolDocument(Document):
-    IDSchool = IntField(primary_key=True)
-    SchoolName = StringField(required=True)
-    Address = ReferenceField(AddressDocument, db_field="IDAddress")
-    meta = {'collection': 'SchoolInformation_School'}
-
-class SchoolClassYearDocument(Document):
-    IDSchoolClassYear = IntField(primary_key=True)
-    SchoolYear = StringField(required=True)
-    School = ReferenceField(SchoolDocument, required=True, db_field="IDSchool")
-    meta = {'collection': 'SchoolInformation_SchoolClassYear'}
+    meta = {'collection': 'ClassPeriod'}
 
 class ClassroomDocument(Document):
-    IDClassroom = IntField(primary_key=True)
+    IDClassroom = IntField(primary_key=True, db_field='_id')
     ClassroomName = StringField(required=True)
     Parish = ReferenceField('ParishDocument', required=True, db_field="IDParish")
-    meta = {'collection': 'ClassInformation_Classroom'}
-
-# --- Documentos Principales ---
+    meta = {'collection': 'Classroom'}
 
 class PersonDocument(Document):
-    IDPerson = IntField(primary_key=True)
+    IDPerson = IntField(primary_key=True, db_field='_id')
     FirstName = StringField()
     MiddleName = StringField()
     FirstSurname = StringField()
@@ -110,173 +127,130 @@ class PersonDocument(Document):
     DNI = StringField()
     Gender = StringField()
     EmailAddress = StringField(required=True)
-    Address = ReferenceField(AddressDocument, db_field="IDAddress")
-    BirthLocation = ReferenceField(LocationDocument, db_field="IDBirthLocation")
-    PhoneNumber = ReferenceField(PhoneNumberDocument, db_field="IDPhoneNumber")
-    meta = {'collection': 'Person_Person'}
+    Address = EmbeddedDocumentField(AddressDocument)
+    BirthLocation = EmbeddedDocumentField(LocationDocument)
+    PhoneNumber = EmbeddedDocumentField(PhoneNumberDocument)
+    meta = {'collection': 'Person'}
 
 class UserDocument(Document):
-    IDUser = IntField(primary_key=True)
+    IDUser = IntField(primary_key=True, db_field="_id")
     Username = StringField(required=True, unique=True)
     Password = StringField()
-    Role = ReferenceField(RoleDocument, required=True, db_field="IDRole")
-    meta = {'collection': 'User_User'}
+    Role = EmbeddedDocumentField(RoleDocument, required=True)
+    meta = {'collection': 'User'}
+    
+    def check_password(self, password: str) -> bool:
+        return check_password_hash(self.Password, password)
 
-class AdministratorDocument(Document): # Asume que este IDUser es la PK y referencia a UserDocument
-    User = ReferenceField(UserDocument, primary_key=True, db_field="IDUser")
-    meta = {'collection': 'User_Administrator'}
+    def set_password(self, password: str) -> None:
+        self.Password = generate_password_hash(password)
 
 class LevelDocument(Document):
-    IDLevel = IntField(primary_key=True)
+    IDLevel = IntField(primary_key=True, db_field='_id')
     Name = StringField(required=True)
     MinAge = IntField(required=True)
     MaxAge = IntField(required=True)
-    PreviousLevel = ReferenceField('self', db_field="IDPreviousLevel") # Nombre DTO: IDPreviousLevel
-    TextBook = ReferenceField(TextBookDocument, required=True, db_field="IDTextBook") # Nombre DTO: TextBook
-    meta = {'collection': 'Catechesis_Level'}
+    PreviousLevel = ReferenceField('self', db_field="IDPreviousLevel")
+    TextBook = EmbeddedDocumentField(TextBookDocument, required=True)
+    meta = {'collection': 'Level'}
 
-class SacramentDocument(Document): # Define los TIPOS de sacramentos
-    IDSacrament = IntField(primary_key=True)
+class SacramentDocument(Document):
+    IDSacrament = IntField(primary_key=True, db_field='_id')
     Name = StringField(required=True, unique=True)
     Level = ReferenceField(LevelDocument, db_field="IDLevel", unique=True, required=False)
-    meta = {'collection': 'Catechesis_Sacrament'}
+    meta = {'collection': 'Sacrament'}
 
 class ParishDocument(Document):
-    IDParish = IntField(primary_key=True)
+    IDParish = IntField(primary_key=True, db_field='_id')
     Name = StringField(required=True)
     Logo = StringField()
-    Address = ReferenceField(AddressDocument, db_field="IDAddress")
-    IsMainParish = BooleanField(default=False) # Nombre de atributo Python igual al DTO
-    meta = {'collection': 'Catechesis_Parish'}
+    Address = EmbeddedDocumentField(AddressDocument)
+    IsMainParish = BooleanField(default=False)
+    meta = {'collection': 'Parish'}
 
-# --- Tipos de Persona ---
+# --- Documentos de Roles de Persona ---
 
 class CatechistDocument(Document):
-    IDCatechist = IntField(primary_key=True) # PK de esta colección
-    Person = ReferenceField(PersonDocument, required=True, db_field="IDCatechist") # El campo en BD es IDCatechist y apunta a PersonDocument
+    IDCatechist = IntField(primary_key=True, db_field='_id')
+    Person = ReferenceField(PersonDocument, required=True, db_field="IDPerson")
     User = ReferenceField(UserDocument, required=True, unique=True, db_field="IDUser")
-    meta = {'collection': 'Person_Catechist'}
+    meta = {'collection': 'Catechist'}
 
 class GodparentDocument(Document):
-    IDGodparent = IntField(primary_key=True)
-    Person = ReferenceField(PersonDocument, required=True, db_field="IDGodparent")
-    meta = {'collection': 'Person_Godparent'}
+    IDGodparent = IntField(primary_key=True, db_field='_id')
+    Person = ReferenceField(PersonDocument, required=True, db_field="IDPerson")
+    meta = {'collection': 'GodParent'}
 
 class ParentDocument(Document):
-    IDParent = IntField(primary_key=True)
-    Person = ReferenceField(PersonDocument, required=True, db_field="IDParent")
+    IDParent = IntField(primary_key=True, db_field='_id')
+    Person = ReferenceField(PersonDocument, required=True, db_field="IDPerson")
     Ocuppation = StringField(required=True)
-    meta = {'collection': 'Person_Parent'}
+    meta = {'collection': 'Parent'}
 
 class ParishPriestDocument(Document):
-    IDParishPriest = IntField(primary_key=True)
-    Person = ReferenceField(PersonDocument, required=True, db_field="IDParishPriest")
+    IDParishPriest = IntField(primary_key=True, db_field='_id')
+    Person = ReferenceField(PersonDocument, required=True, db_field="IDPerson")
     User = ReferenceField(UserDocument, required=True, unique=True, db_field="IDUser")
     Parish = ReferenceField(ParishDocument, required=True, db_field="IDParish")
-    meta = {'collection': 'Person_ParishPriest'}
+    meta = {'collection': 'ParishPriest'}
 
 class SupportPersonDocument(Document):
-    IDSupportPerson = IntField(primary_key=True)
-    Person = ReferenceField(PersonDocument, required=True, db_field="IDSupportPerson")
-    meta = {'collection': 'Person_SupportPerson'}
+    IDSupportPerson = IntField(primary_key=True, db_field='_id')
+    Person = ReferenceField(PersonDocument, required=True, db_field="IDPerson")
+    meta = {'collection': 'support_person'}
 
-# --- Schedule Anidado ---
-class ScheduleEmbedded(EmbeddedDocument):
-    DayOfTheWeek = ReferenceField(DayOfTheWeekDocument, required=True, db_field="IDDayOfTheWeek")
-    StartHour = StringField(required=True)
-    EndHour = StringField(required=True)
-    Classroom = ReferenceField(ClassroomDocument, required=True, db_field="IDClassroom")
-    # El DTO original de ScheduleDTO tiene un IDSchedule. Si Schedule se embebe,
-    # este IDSchedule no tendría sentido como PK. Si Schedule fuera su propia colección, SÍ tendría IDSchedule.
-    # Por ahora, al ser embebido, no le pongo IDSchedule.
+# --- Documentos Relacionales y Principales ---
 
 class ClassDocument(Document):
     IDClass = IntField(primary_key=True)
     ClassPeriod = ReferenceField(ClassPeriodDocument, required=True, db_field="IDClassPeriod")
     Catechist = ReferenceField(CatechistDocument, required=True, db_field="IDCatechist")
     Level = ReferenceField(LevelDocument, required=True, db_field="IDLevel")
-    SupportPerson = ReferenceField(SupportPersonDocument, required=True, db_field="IDSupportPerson")
-    Schedule = ListField(EmbeddedDocumentField(ScheduleEmbedded)) # El campo en BD se llamará 'Schedule'
-    meta = {'collection': 'ClassInformation_Class'}
+    SupportPerson = ReferenceField(SupportPersonDocument, db_field="IDSupportPerson")
+    Schedule = ListField(EmbeddedDocumentField(ScheduleEmbedded))
+    meta = {'collection': 'Class'}
 
-class ClassAuthorizationDocument(Document):
+class ClassAuthorizationDocument(EmbeddedDocument):
     IDClassAuthorization = IntField(primary_key=True)
     IssueDate = DateField(required=True)
     ParishPriest = ReferenceField(ParishPriestDocument, required=True, db_field="IDParishPriest")
-    meta = {'collection': 'ClassInformation_ClassAuthorization'}
-
-# --- Documentos Específicos de Catechizing ---
-
-class HealthInformationEmbedded(EmbeddedDocument):
-    ImportantAspects = StringField(required=True)
-    BloodType = ReferenceField(BloodTypeDocument, db_field="IDBloodType")
-    EmergencyContact = ReferenceField(PersonDocument, db_field="IDEmergencyContact") # Atributo 'EmergencyContact', campo en BD 'IDEmergencyContact'
-    Allergy = ListField(ReferenceField(AllergyDocument)) # El campo en BD será 'Allergy' y contendrá lista de IDs
-
-class DataSheetEmbedded(EmbeddedDocument):
-    DataSheetInformation = StringField(required=True)
-    # IDPerson del DTO no es necesario aquí como PK del DataSheet embebido.
-    # Se asocia al Catequizando padre.
 
 class CatechizingDocument(Document):
     IDCatechizing = IntField(primary_key=True)
-    # DTO: Person: Optional['PersonDTO']
-    Person = ReferenceField(PersonDocument, required=True, db_field="IDCatechizing") # Campo BD: IDCatechizing (PK de Person)
+    Person = ReferenceField(PersonDocument, required=True, db_field="IDPerson")
     IsLegitimate = BooleanField(required=True)
     SiblingsNumber = IntField(required=True)
     ChildNumber = IntField(required=True)
     PayedLevelCourse = BooleanField(required=True)
-    # DTO: Class: Optional['ClassDTO']
-    Class = ReferenceField(ClassDocument, db_field="IDClass") # Campo BD: IDClass
-    # DTO: SchoolClassYear: Optional['SchoolClassYearDTO']
-    SchoolClassYear = ReferenceField(SchoolClassYearDocument, db_field="IDSchoolClassYear") # Campo BD: IDSchoolClassYear
+    Class = ReferenceField(ClassDocument, db_field="IDClass")
+    
+    # --- Campos Embebidos ---
+    SchoolClassYear = EmbeddedDocumentField(SchoolClassYearDocument)
+    DataSheet = EmbeddedDocumentField(DataSheetEmbedded)
+    HealthInformation = EmbeddedDocumentField(HealthInformationEmbedded)
+    
+    # --- Listas de Referencias (Relaciones 1-a-N) ---
+    Parent = ListField(ReferenceField(ParentDocument))
+    Godparent = ListField(ReferenceField(GodparentDocument))
+    Sacrament = ListField(ReferenceField(SacramentDocument))
+    
+    # --- Listas de Documentos Embebidos (según diagrama) ---
+    AttendedClass = ListField(EmbeddedDocumentField(AttendedClassEmbedded))
+    ParticularClass = ListField(EmbeddedDocumentField(ParticularClassEmbedded))
 
-    DataSheet = EmbeddedDocumentField(DataSheetEmbedded) # Asumiendo que DataSheetEmbedded está definido
-    HealthInformation = EmbeddedDocumentField(HealthInformationEmbedded) # Asumiendo que HealthInformationEmbedded está definido
+    meta = {'collection': 'Catechizing'}
+    
+class AdministratorDocument(Document): # Asume que este IDUser es la PK y referencia a UserDocument
+    User = ReferenceField(UserDocument, db_field="IDUser")
+    meta = {'collection': 'Administrator'}
 
-    # DTO: Parent: List['ParentDTO']
-    Parent = ListField(ReferenceField(ParentDocument)) # Campo BD 'Parent', lista de IDs de Parent
-    # DTO: Godparent: List['GodparentDTO']
-    Godparent = ListField(ReferenceField(GodparentDocument)) # Campo BD 'Godparent', lista de IDs de Godparent
-
-    # DTO: Sacrament: List['SacramentDTO'] = []
-    # Esto será una lista de referencias a SacramentDocument.
-    # El campo en BD almacenará una lista de IDSacrament.
-    Sacrament = ListField(ReferenceField(SacramentDocument)) # El campo en BD se llamará 'Sacrament'
-
-    meta = {'collection': 'Person_Catechizing'}
-
-
-class BaptismalCertificateDocument(Document):
-    # DTO tiene IDCatechizing como PK y FK.
+class BaptismalCertificateDocument(EmbeddedDocument):
     Catechizing = ReferenceField(CatechizingDocument, primary_key=True, db_field="IDCatechizing")
     IssueDate = DateField(required=True)
-    BaptismalBookPage = ReferenceField(BaptismalBookPageDocument, required=True, db_field="IDBaptismalBookPage")
+    BaptismalBookPage = EmbeddedDocumentField(BaptismalBookPageDocument, required=True)
     ParishPriest = ReferenceField(ParishPriestDocument, required=True, db_field="IDParishPriest")
-    meta = {'collection': 'Certificate_BaptismalCertificate'}
 
-class LevelCertificateDocument(Document):
+class LevelCertificateDocument(EmbeddedDocument):
     IDLevelCertificate = IntField(primary_key=True)
     Catechizing = ReferenceField(CatechizingDocument, required=True, db_field="IDCatechizing")
-    Class = ReferenceField(ClassDocument, required=True, db_field="IDClass") # Atributo 'Class', campo BD 'IDClass'
-    meta = {'collection': 'Certificate_LevelCertificate'}
-
-class AttendedClassDocument(Document):
-    # Como antes, usando índice único para la clave semántica
-    IDCatechizing = ReferenceField(CatechizingDocument, required=True) # Atributo y campo BD son IDCatechizing
-    IDClass = ReferenceField(ClassDocument, required=True) # Atributo y campo BD son IDClass
-    Date = DateField(required=True)
-    meta = {
-        'collection': 'ClassInformation_AttendedClass',
-        'indexes': [
-            {'fields': ('IDCatechizing', 'IDClass', 'Date'), 'unique': True}
-        ]
-    }
-
-class ParticularClassDocument(Document):
-    IDParticularClass = IntField(primary_key=True)
-    ClassDate = DateField(required=True)
-    Catechizing = ReferenceField(CatechizingDocument, required=True, db_field="IDCatechizing")
-    ClassAuthorization = ReferenceField(ClassAuthorizationDocument, required=True, db_field="IDClassAuthorization")
-    Level = ReferenceField(LevelDocument, required=True, db_field="IDLevel")
-    meta = {'collection': 'ClassInformation_ParticularClass'}
+    Class = ReferenceField(ClassDocument, required=True, db_field="IDClass")

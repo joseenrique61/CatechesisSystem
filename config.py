@@ -35,16 +35,24 @@ class Config:
         SQLALCHEMY_ECHO = FLASK_DEBUG # Imprime consultas SQL en modo debug (útil para depurar)
     
     else:
-        MongoDB_SERVER=os.environ.get('MongoDB_SERVER')
-        MongoDB_DATABASE=os.environ.get('MongoDB_DATABASE', 'ParishDatabase')
-        MongoDB_USERNAME=os.environ.get('MongoDB_USERNAME')
-        MongoDB_PASSWORD=os.environ.get('MongoDB_PASSWORD')
+        # MongoDB_SERVER=os.environ.get('MongoDB_SERVER')
+        # MongoDB_DATABASE=os.environ.get('MongoDB_DATABASE', 'ParishDatabase')
+        # MongoDB_USERNAME=os.environ.get('MongoDB_USERNAME')
+        # MongoDB_PASSWORD=os.environ.get('MongoDB_PASSWORD')
+
+        # MONGODB_SETTINGS = {
+        #    "db": MongoDB_DATABASE,
+        #    "host": MongoDB_SERVER,
+        #    "username": MongoDB_USERNAME,
+        #    "password": MongoDB_PASSWORD
+        # }
+        
+        # Cargar directamente la URI desde el .env
+        MONGO_URI = os.environ.get('MONGODB_URI')
 
         MONGODB_SETTINGS = {
-            "db": MongoDB_DATABASE,
-            "host": MongoDB_SERVER,
-            "username": MongoDB_USERNAME,
-            "password": MongoDB_PASSWORD
+            "host": MONGO_URI,  # MongoEngine espera "host" con URI completa
+            "db": "ParishDatabase"
         }
 
     UPLOAD_FOLDER = os.path.join(basedir, "app", 'static', 'uploads')

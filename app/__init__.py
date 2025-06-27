@@ -41,7 +41,7 @@ def create_app(config_class=Config):
         else: 
             from .main.data.dal.mongodb import mongodb_models
 
-    print(f"Aplicación creada. Debug: {app.debug}")
+    print(f"Aplicación creada. Debug: {app.debug}, DB_TYPE: {DB_TYPE}")
 
     return app
 
