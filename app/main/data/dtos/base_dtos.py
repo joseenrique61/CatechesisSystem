@@ -39,6 +39,12 @@ class LocationDTO(BaseDTO):
     State: str
     Country: str
     
+class BloodTypeDTO(BaseDTO):
+    Type: str
+    
+class DayOfTheWeekDTO(BaseDTO):
+    Day: str
+
 class PhoneNumberTypeDTO(BaseDTO):
     PhoneNumberType: str
 

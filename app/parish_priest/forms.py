@@ -1,4 +1,4 @@
-from wtforms import Form, FieldList, IntegerField, HiddenField, StringField, TimeField, SelectField, BooleanField, FormField, SubmitField, TextAreaField
+from wtforms import Form, FieldList, IntegerField, HiddenField, StringField, TimeField, SelectField, BooleanField, FormField, SubmitField, TextAreaField, RadioField
 from wtforms.validators import DataRequired, Length, Optional, NumberRange
 from flask_wtf import FlaskForm
 from flask import session
@@ -28,48 +28,18 @@ class HealthInformationForm(Form):
     Allergy = FieldList(FormField(AllergyForm), 'Alergias', min_entries=1)
     
     # FIX: El campo ahora se llama como en el DTO y no fuerza a 'int'.
-    BloodType = SelectField('Tipo de Sangre', validators=[DataRequired()])
+    BloodType = SelectField('Tipo de Sangre')
     
     EmergencyContact = FormField(PersonForm, 'Contacto de Emergencia')
 
     def __init__(self, *args, **kwargs):
         super(HealthInformationForm, self).__init__(*args, **kwargs)
         # FIX: Las opciones ahora usan el valor de string directamente.
-        self.BloodType.choices = [(bt.BloodType, bt.BloodType) for bt in dal.get_all_blood_types()]
+        self.BloodType.choices = [(bt) for bt in dal.get_all_blood_types()]
 
 # --- Formulario Principal ---
 class DataSheetForm(Form):
     DataSheetInformation: str = TextAreaField('Información Adicional (Ficha)', validators=[Optional()])
-
-# class CatechizingForm(FlaskForm):
-#     Person = FormField(PersonForm, 'Datos Personales del Catequizando')
-#     IsLegitimate = BooleanField('¿Es Hijo(a) Legítimo(a)?', default=False)
-#     SiblingsNumber = IntegerField('Número de Hermanos', validators=[DataRequired(), NumberRange(min=0)])
-#     ChildNumber = IntegerField('Lugar que Ocupa entre los Hermanos', validators=[DataRequired(), NumberRange(min=1)])
-
-#     SchoolClassYear = FormField(SchoolClassYearForm, 'Información Escolar')
-
-#     Class = SelectField('Clase Asignada', validators=[DataRequired()], choices=[], coerce=int)
-
-#     PayedLevelCourse = BooleanField('¿Curso de Nivel Pagado?', default=False)
-
-#     Parent = FieldList(FormField(ParentForm), 'Padres/Tutores', min_entries=1, max_entries=2) # Al menos un padre/tutor
-#     Godparent = FieldList(FormField(GodparentForm), 'Padrinos/Madrinas', min_entries=1, max_entries=2) # Padrinos pueden ser opcionales inicialmente
-
-#     HealthInformation = FormField(HealthInformationForm, 'Información de Salud')
-
-#     # DataSheetCreateDTO se representa como un solo campo de texto
-#     DataSheet = FormField(DataSheetForm, label="Hoja de datos")
-
-#     HasParticularClass = BooleanField('¿Tomó clases particulares?', default=False)
-
-#     # Podrías añadir un botón de envío aquí o en la plantilla
-#     Submit = SubmitField('Registrar Catequizando')
-
-#     def __init__(self, *args, **kwargs):
-#         super(CatechizingForm, self).__init__(*args, **kwargs)
-#         self.Class.choices = [(item.Class, f"{item.Level.Name}: {', '.join([sch.DayOfTheWeek.DayOfTheWeek + ': ' + sch.StartHour + ' - ' + sch.EndHour for sch in item.Schedule])}") for item in dal.get_classes_by_parish_id(dal.get_parish_priest_by_id(session["id"]))]
-
 
 class CatechizingForm(FlaskForm):
     Person = FormField(PersonForm, 'Datos Personales del Catequizando')
@@ -96,7 +66,7 @@ class CatechizingForm(FlaskForm):
         priest_dto = dal.get_parish_priest_by_id(session["id"])
         if priest_dto and priest_dto.Parish:
             classes = dal.get_classes_by_parish_id(priest_dto.Parish.id)
-            self.Class.choices = [(c.id, f"{c.Level.Name}: {c.Schedule[0].DayOfTheWeek.DayOfTheWeek if c.Schedule else ''}") for c in classes]
+            self.Class.choices = [(c.id, f"{c.Level.Name}: {c.Schedule.DayOfTheWeek if c.Schedule else '' } ( {c.Schedule.StartHour} - {c.Schedule.EndHour}) ") for c in classes]
 
 class ScheduleForm(Form):
     DayOfTheWeek = SelectField('Día de la semana', coerce=int)
@@ -117,30 +87,6 @@ class ScheduleForm(Form):
         if field.data:
             field.data = f"{'0' if field.data.hour < 10 else ''}{field.data.hour}:{field.data.minute}"
 
-# class ClassForm(FlaskForm):
-#     ClassPeriod = SelectField('Periodo de clases', coerce=int)
-#     Level = SelectField('Nivel de catecismo', coerce=int)
-#     Catechist = SelectField('Catequista encargado', coerce=int)
-#     SupportPerson = SelectField('Persona de soporte', coerce=int)
-#     Schedule = FieldList(FormField(ScheduleForm), min_entries=1, label='Horario')
-#     Submit = SubmitField('Registrar clase')
-
-#     def __init__(self, *args, **kwargs):
-#         super(ClassForm, self).__init__(*args, **kwargs)
-#         self.ClassPeriod.choices = [(item.ClassPeriod, str(item)) for item in dal.get_all_periods()]
-#         self.Level.choices = [(item.Level, item.Name) for item in dal.get_all_levels()]
-        
-#         catechists = dal.get_all_catechists()
-#         if catechists:
-#             self.Catechist.choices = []
-#             for catechist in catechists:
-#                 self.Catechist.choices.append((catechist.Catechist, f"{catechist.Person.FirstName} {catechist.Person.FirstSurname}"))
-
-#         support_persons = dal.get_all_support_person()
-#         if support_persons:
-#             self.SupportPerson.choices = []
-#             for support_person in support_persons:
-#                 self.SupportPerson.choices.append((support_person.SupportPerson, f"{support_person.Person.FirstName} {support_person.Person.FirstSurname}"))
 class ClassForm(FlaskForm):
     # FIX: Campos renombrados para coincidir con DTOs y sin coerce=int
     ClassPeriod = SelectField('Periodo de clases')
@@ -181,14 +127,17 @@ class SupportPersonForm(FlaskForm):
 class HealthInformationUpdateForm(Form):
     ImportantAspects: str = TextAreaField('Aspectos Importantes de Salud', validators=[Optional()])
     Allergy: list['AllergyForm'] = FieldList(FormField(AllergyForm), 'Alergias', min_entries=1)
-    BloodType: int = HiddenField(SelectField('Tipo de Sangre', validators=[DataRequired()], choices=[], coerce=int))
+    BloodType: str = HiddenField(SelectField('Tipo de Sangre', validators=[DataRequired()], choices=[]))
+    # BloodType: RadioField('Género', choices=[('M', 'Masculino'), ('F', 'Femenino')], default="M")
     EmergencyContact: 'PersonForm' = FormField(PersonForm, 'Contacto de Emergencia')
 
     def __init__(self, *args, **kwargs):
         super(HealthInformationUpdateForm, self).__init__(*args, **kwargs)
-        self.BloodType.choices = [(item.BloodType, item.BloodType) for item in dal.get_all_blood_types()]
+        # self.BloodType.choices = [(item.BloodType, item.BloodType) for item in dal.get_all_blood_types()]
+        self.BloodType.choices = [(bt) for bt in dal.get_all_blood_types()]
 
 class CatechizingUpdateForm(FlaskForm):
+    
     Person: 'PersonUpdateForm' = FormField(PersonUpdateForm, 'Datos Personales del Catequizando')
     IsLegitimate: bool = HiddenField(BooleanField('¿Es Hijo(a) Legítimo(a)?', default=False))
     SiblingsNumber: int = IntegerField('Número de Hermanos', validators=[DataRequired(), NumberRange(min=0)])
@@ -218,9 +167,4 @@ class CatechizingUpdateForm(FlaskForm):
             priest_dto = dal.get_parish_priest_by_id(session["id"])
             if priest_dto and priest_dto.Parish:
                 classes = dal.get_classes_by_parish_id(priest_dto.Parish.id)
-                self.Class.choices = [(c.id, f"{c.Level.Name}: {c.Schedule[0].DayOfTheWeek.DayOfTheWeek if c.Schedule else ''}") for c in classes]
-    
-    # def __init__(self, *args, **kwargs):
-    #     super(CatechizingUpdateForm, self).__init__(*args, **kwargs)
-        
-    #     self.Class.choices = [(item.Class, f"{item.Level.Name}: {', '.join([sch.DayOfTheWeek.DayOfTheWeek + ': ' + sch.StartHour + ' - ' + sch.EndHour for sch in item.Schedule])}") for item in dal.get_classes_by_parish_id(dal.get_parish_priest_by_id(session["id"]).Parish.id)]
+                self.Class.choices = [(c.id, f"{c.Level.Name}: {c.Schedule.DayOfTheWeek if c.Schedule else '' } ( {c.Schedule.StartHour} - {c.Schedule.EndHour} ) ") for c in classes]

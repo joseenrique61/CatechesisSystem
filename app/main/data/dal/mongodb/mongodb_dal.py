@@ -553,17 +553,15 @@ class MongoDBDAL(IDataAccessLayer):
     #     logging.warning("Llamada a un método no aplicable (get_blood_type_by_id). BloodType es un documento embebido.")
     #     return None
 
-    # def get_all_blood_types(self) -> List[BloodTypeDTO]:
-    #     # Usamos distinct() para obtener una lista de todos los valores únicos
-    #     # del campo BloodType dentro de los documentos embebidos.
-    #     try:
-    #         distinct_blood_types = CatechizingDocument.objects.distinct('HealthInformation.BloodType.BloodType')
-    #         # Filtramos cualquier valor nulo o vacío que pueda existir
-    #         valid_types = [bt for bt in distinct_blood_types if bt]
-    #         return [BloodTypeDTO(BloodType=bt) for bt in valid_types]
-    #     except Exception as e:
-    #         logging.error(f"Error al obtener tipos de sangre únicos: {e}")
-    #         return []
+    def get_all_blood_types(self) -> List[BloodTypeDTO]:
+        types = [
+            "O+",
+            "O-",
+            "A+",
+            "A-",
+            "AB",
+        ]
+        return [BloodTypeDTO(Type=type) for type in types]
 
     def get_phone_number_type_by_id(self, phone_number_type_id: str) -> Optional[PhoneNumberTypeDTO]:
         try:
@@ -573,9 +571,9 @@ class MongoDBDAL(IDataAccessLayer):
             logging.error(f"Error al obtener tipo de teléfono por ID '{phone_number_type_id}': {e}")
             return None
 
-    # def get_all_day_of_the_week(self) -> List[DayOfTheWeekDTO]:
-    #     days = [
-    #         "Lunes", "Martes", "Miércoles", "Jueves", 
-    #         "Viernes", "Sábado", "Domingo"
-    #     ]
-    #     return [DayOfTheWeekDTO(DayOfTheWeek=day) for day in days]
+    def get_all_day_of_the_week(self) -> List[DayOfTheWeekDTO]:
+        days = [
+            "Lunes", "Martes", "Miércoles", "Jueves", 
+            "Viernes", "Sábado", "Domingo"
+        ]
+        return [DayOfTheWeekDTO(Day=day) for day in days]

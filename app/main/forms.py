@@ -1,4 +1,4 @@
-from wtforms import Form, HiddenField, StringField, validators, FormField, DateField, RadioField, SubmitField, SelectField, FieldList
+from wtforms import Form, HiddenField, StringField, validators, FormField, DateField, RadioField, SubmitField, SelectField
 from wtforms.fields import EmailField
 from flask_wtf.file import FileAllowed, FileField, FileRequired
 from flask_wtf import FlaskForm
@@ -41,16 +41,17 @@ class PersonForm(Form):
     PhoneNumber = FormField(PhoneNumberForm, label="Número de teléfono")
     EmailAddress = EmailField('Correo electrónico', [validators.Length(min=1, max=100)])
 
-class ClassroomForm(Form):
-    ClassroomName = StringField("Nombre del aula", [validators.Length(min=1, max=5)])
 
 class ParishForm(FlaskForm):
     Name = StringField('Nombre de la parroquia', [validators.Length(min=1, max=100)])
     LogoImage = FileField('Logo', render_kw={'accept': 'image/png, image/jpeg, image/jpg'}, validators=[FileRequired(), FileAllowed(['jpg', 'png', 'jpeg'])])
     Address = FormField(AddressForm, label='Dirección')
-    Classroom = FieldList(FormField(ClassroomForm), min_entries=1, label='Aulas')
+    # ClassRoom = FieldList(FormField('ClassroomForm'), min_entries=1, label='Aulas')
     Submit = SubmitField('Registrar')
 
+class ClassroomForm(Form):
+    ClassRoomName = StringField("Nombre del aula", [validators.Length(min=1, max=20)])
+    Paish = FormField(ParishForm, label="Parroquia")
 
 # --- Update forms ---
 
