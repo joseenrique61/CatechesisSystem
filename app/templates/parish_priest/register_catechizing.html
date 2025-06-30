@@ -96,13 +96,6 @@
                                 {{ sch_form.SchoolName(class="form-control form-control-sm" + (" is-invalid" if sch_form.SchoolName.errors else "")) }}
                                 {% if sch_form.SchoolName.errors %}<div class="invalid-feedback">{% for e in sch_form.SchoolName.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
                             </div>
-                            {# Dirección del Colegio (AddressForm anidado) #}
-                            <fieldset class="nested-fieldset p-2">
-                                <legend class="w-auto px-2 small">{{ sch_form.Address.label.text }}</legend>
-                                {% set sch_addr_form = sch_form.Address %}
-                                {% set size_class = "form-control-sm" %}
-                                {% include 'partials/_address_form_fields.html' %}
-                            </fieldset>
                         </fieldset>
                     </fieldset>
 
@@ -111,9 +104,9 @@
                         <legend class="w-auto px-2 h5">Asignación y Administrativo</legend>
                          <div class="row">
                             <div class="col-md-8 mb-3">
-                                {{ form.IDClass.label(class="form-label") }}
-                                {{ form.IDClass(class="form-select" + (" is-invalid" if form.IDClass.errors else "")) }}
-                                {% if form.IDClass.errors %}<div class="invalid-feedback">{% for e in form.IDClass.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
+                                {{ form.Class.label(class="form-label") }}
+                                {{ form.Class(class="form-select" + (" is-invalid" if form.Class.errors else "")) }}
+                                {% if form.Class.errors %}<div class="invalid-feedback">{% for e in form.Class.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
                             </div>
                             <div class="col-md-4 mb-3 align-self-center">
                                 {{ form.PayedLevelCourse.label(class="form-check-label") }}
@@ -195,9 +188,9 @@
                             {% if hi_form.ImportantAspects.errors %}<div class="invalid-feedback">{% for e in hi_form.ImportantAspects.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
                         </div>
                         <div class="mb-3">
-                             {{ hi_form.IDBloodType.label(class="form-label") }}
-                             {{ hi_form.IDBloodType(class="form-select form-select-sm" + (" is-invalid" if hi_form.IDBloodType.errors else "")) }}
-                             {% if hi_form.IDBloodType.errors %}<div class="invalid-feedback">{% for e in hi_form.IDBloodType.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
+                             {{ hi_form.BloodType.label(class="form-label") }}
+                             {{ hi_form.BloodType(class="form-select form-select-sm" + (" is-invalid" if hi_form.BloodType.errors else "")) }}
+                             {% if hi_form.BloodType.errors %}<div class="invalid-feedback">{% for e in hi_form.BloodType.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
                         </div>
 
                         {# Alergias (FieldList de AllergyForm anidado en HealthInformationForm) #}

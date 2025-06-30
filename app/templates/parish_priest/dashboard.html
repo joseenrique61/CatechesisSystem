@@ -79,7 +79,6 @@
                         <th>Nivel</th>
                         <th>Horarios y Aulas</th>
                         <th>Catequista</th>
-                        <th># Catequizandos</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -105,9 +104,6 @@
                             {% else %}
                                 No asignado
                             {% endif %}
-                        </td>
-                        <td>
-                            {{ p_class.Catechizing | length if p_class.Catechizing is not none else 0 }}
                         </td>
                     </tr>
                     {% else %}
@@ -181,7 +177,6 @@
                 <thead>
                     <tr>
                         <th>Nombre Completo</th>
-                        <th>Niveles que Imparte</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -190,13 +185,6 @@
                         <td>
                             {{ catechist.Person.FirstName if catechist.Person else 'N/A' }} 
                             {{ catechist.Person.FirstSurname if catechist.Person else '' }}
-                        </td>
-                        <td>
-                            {% if catechist.Class %}
-                                {{ catechist.Class | map(attribute='Level.Name') | reject('none') | join(', ') if catechist.Class else 'Ninguno asignado' }}
-                            {% else %}
-                                Ninguno asignado
-                            {% endif %}
                         </td>
                     </tr>
                     {% else %}

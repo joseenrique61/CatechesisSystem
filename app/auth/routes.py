@@ -30,17 +30,16 @@ def login():
         session.clear()
         
         user_type = dal.get_dto_by_user(user.Username)
+        user = user_type.User;
+        
         if type(user_type) is ParishPriestDTO:
-            user_id = user_type.IDParishPriest
             role = "ParishPriest" 
         elif type(user_type) is CatechistDTO:
-            user_id = user_type.IDCatechist
             role = "Catechist"
         elif type(user_type) is AdministratorDTO:
-            user_id = user.IDUser
             role = "Admin"
 
-        session['id'] = user_id
+        session['id'] = user.id
         session['role'] = role
         session['username'] = user.Username
 

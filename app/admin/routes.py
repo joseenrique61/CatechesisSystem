@@ -12,7 +12,17 @@ bp = Blueprint('admin', __name__)
 @bp.route('/dashboard', methods=['GET'])
 @login_required("Admin")
 def dashboard():
-    return render_template("admin/dashboard.html", title="Dashboard del Administrador", parish_priests=dal.get_all_parish_priests(), catechists=dal.get_all_catechists(), parishes=dal.get_all_parishes(include=["ParishPriest.Person"]))
+    
+    parishes=dal.get_all_parishes()
+    parish_priests=dal.get_all_parish_priests()
+    catechists=dal.get_all_catechists()
+    
+    return render_template("admin/dashboard.html", 
+                           title="Dashboard del Administrador", 
+                           parishes=parishes,
+                           parish_priests=parish_priests,
+                           catechists=catechists
+                           )
 
 @bp.route('/parish_priest/create', methods=['GET', 'POST'])
 @login_required("Admin")

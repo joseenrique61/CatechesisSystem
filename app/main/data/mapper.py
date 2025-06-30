@@ -3,6 +3,7 @@ import typing
 import sys
 import inspect
 from sqlalchemy.orm.base import Mapped
+from bson import ObjectId
 
 from app.main.data.dtos.base_dtos import *
 
@@ -228,16 +229,25 @@ class Mappable:
                 if debug: print(f"[DEBUG]   '{attr_name}' (tipo {actual_loc_type_for_conversion.__name__}) es subclase de Mappable. Llamando recursivamente a from_db_obj.")
                 kwargs_for_constructor[attr_name] = actual_loc_type_for_conversion._from_other_obj(db_attr_value, debug=debug, custom_var_path=custom_var_path, current_depth=current_depth + 1, depth=depth, ignore_optional=ignore_optional, ignore_lists=ignore_lists, include=include, exclude=exclude, current_param_name=temp_current_attr_name)
             
-            # elif hasattr(actual_loc_type_for_conversion, '_from_db_obj') and callable(getattr(actual_loc_type_for_conversion, 'from_db_obj')):
-            #     if debug: print(f"[DEBUG]   '{attr_name}' (tipo {getattr(actual_loc_type_for_conversion, '__name__', repr(actual_loc_type_for_conversion))}) tiene from_db_obj. Llamando recursivamente.")
-            #     kwargs_for_constructor[attr_name] = actual_loc_type_for_conversion._from_db_obj(db_attr_value, debug=debug)
-            
             else: # Asignación directa
                 if debug: print(f"[DEBUG]   '{attr_name}' no es Mappable anidado/lista de Mappables o no se reconoce. Asignación directa.")
 
-                if custom_var_path != "":
-                    db_attr_value = getattr(db_attr_value, custom_var_path)
-                kwargs_for_constructor[attr_name] = db_attr_value
+                # --- INICIO DE LA LÓGICA CORREGIDA ---
+                final_value = getattr(db_obj, attr_name)
+
+                # Si el atributo es 'id' y su valor es un ObjectId, lo convertimos a string.
+                if attr_name == 'id' and isinstance(final_value, ObjectId):
+                    kwargs_for_constructor[attr_name] = str(final_value)
+                else:
+                    # Para todos los demás atributos, usamos la lógica que ya tenías.
+                    if custom_var_path != "":
+                        final_value = getattr(final_value, custom_var_path)
+                    kwargs_for_constructor[attr_name] = final_value
+                # --- FIN DE LA LÓGICA CORREGIDA ---
+
+                # if custom_var_path != "":
+                #     db_attr_value = getattr(db_attr_value, custom_var_path)
+                # kwargs_for_constructor[attr_name] = db_attr_value
         
         if debug: print(f"[DEBUG] Argumentos finales para el constructor de {cls.__name__}: {kwargs_for_constructor}")
         try:

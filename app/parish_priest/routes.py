@@ -11,14 +11,28 @@ bp = Blueprint('parish_priest', __name__)
 @bp.route("/dashboard", methods=["GET"])
 @login_required("ParishPriest")
 def dashboard():
-    parish_classes = dal.get_classes_by_parish_id(dal.get_parish_priest_by_id(session["id"]).IDParish, include=["Catechist.Person", "Catechizing", "Catechizing.Person", "Schedule.Classroom"])
+    
+    priest_dto = dal.get_parish_priest_by_id(session["id"])
+    
+    if not priest_dto or not priest_dto.Parish:
+        flash("No se pudo cargar la información del párroco o su parroquia.", "danger")
+        return redirect(url_for('main.index'))
+    
+    current_parish_id = priest_dto.Parish.id
+    
+    # parish_classes = dal.get_classes_by_parish_id(current_parish_id, include=["Catechist.Person", "Catechizing", "Catechizing.Person", "Schedule.Classroom"])
+    # parish_classes = dal.get_classes_by_parish_id(current_parish_id)
+    parish_classes = dal.get_classes_by_parish_id(current_parish_id, include=["Catechist.Person", "Level", "Schedule.Classroom","ClassPeriod"])
+    catechizings = dal.get_catechizings_by_parish(current_parish_id, include=["Person","Class", "Class.Level"])
+    catechists = dal.get_catechists_by_parish_id(current_parish_id,include=["User", "Person"])
+    support_persons = dal.get_support_persons_by_parish_id(current_parish_id,include=["Person"])
+       
     return render_template("parish_priest/dashboard.html",
                            title="Dashboard del párroco", 
-                           catechizings=dal.get_catechizings_by_parish(dal.get_parish_priest_by_id(session["id"]).IDParish, 
-                                                                       include=["Class", "Class.Level"]), 
+                           catechizings=catechizings,
                            parish_classes=parish_classes,
-                           catechists=dal.get_all_catechists(include=["Class", "Class.Level"]), 
-                           support_persons=dal.get_all_support_person(include=["Class", "Class.Level"]),
+                           catechists=catechists, 
+                           support_persons=support_persons,
                            calculate_age=calculate_age)
 
 

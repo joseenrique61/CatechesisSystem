@@ -150,7 +150,7 @@ class IDataAccessLayer(ABC):
         pass
 
     @abstractmethod
-    def get_all_support_person(self, include: list[str] = []) -> List[SupportPersonDTO]:
+    def get_all_support_persons(self, include: list[str] = []) -> List[SupportPersonDTO]:
         pass
 
     @abstractmethod
