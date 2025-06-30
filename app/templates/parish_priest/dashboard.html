@@ -89,9 +89,7 @@
                         </td>
                         <td>
                             {% if p_class.Schedule %}
-                                {% for schedule_info in p_class.Schedule %}
-                                    Aula: {{ schedule_info.Classroom.ClassroomName }}. {{ schedule_info.DayOfTheWeek.DayOfTheWeek }}: {{ schedule_info.StartHour }} - {{ schedule_info.EndHour }} <br>
-                                {% endfor %}
+                                Aula: {{ p_class.Schedule.ClassRoom.ClassRoomName }}. {{ p_class.Schedule.DayOfTheWeek.DayOfTheWeek }}: {{ p_class.Schedule.StartHour }} - {{ p_class.Schedule.EndHour }} <br>
                             {% else %}
                                 Horario no definido
                             {% endif %}
@@ -121,7 +119,7 @@
 <div class="card shadow mb-4">
     <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
         <h6 class="m-0 font-weight-bold text-primary">Personas de Soporte</h6>
-        <a href="{{ url_for('parish_priest.register_support_person') }}" class="btn btn-success mt-3"><i class="fas fa-user-plus"></i> Registrar Nueva Persona de Soporte</a>
+        <a href="{{ url_for('parish_priest.register_support_person') }}" class="btn btn-success"><i class="fas fa-user-plus"></i> Registrar Nueva Persona de Soporte</a>
     </div>
     <div class="card-body">
         <div class="table-responsive">
@@ -129,35 +127,36 @@
                 <thead>
                     <tr>
                         <th>Nombre Completo</th>
-                        <th>Niveles en los que Asiste</th> <!-- Nuevo encabezado -->
+                        <th>Niveles en los que Asiste</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for support_person in support_persons %} {# Itera sobre la lista de personas de soporte #}
+                    {# Iteramos sobre el diccionario que preparamos en la ruta #}
+                    {# .values() nos da acceso a cada objeto {person_data, levels} #}
+                    {% for support_info in support_persons_data.values() %}
                     <tr>
                         <td>
-                            {# Muestra el nombre completo del SupportPerson #}
-                            {{ support_person.Person.FirstName if support_person.Person else 'N/A' }}
-                            {{ support_person.Person.FirstSurname if support_person.Person else '' }}
+                            {# Accedemos al nombre completo desde el DTO anidado #}
+                            {% if support_info.person_data and support_info.person_data.Person %}
+                                {{ support_info.person_data.Person.FirstName }} {{ support_info.person_data.Person.FirstSurname }}
+                            {% else %}
+                                Información de persona no disponible
+                            {% endif %}
                         </td>
                         <td>
-                            {# Muestra los nombres de los niveles de las clases en las que asiste, permitiendo repeticiones #}
-                            {% if support_person.Class %}
-                                {% for cls in support_person.Class %}
-                                    {% if cls.Level and cls.Level.Name %}
-                                        {{ cls.Level.Name }}{% if not loop.last %}, {% endif %}
-                                    {% endif %}
-                                {% else %}
-                                    Ninguno asignado
-                                {% endfor %}
+                            {# Comprobamos si la lista de niveles tiene elementos #}
+                            {% if support_info.levels %}
+                                {# Usamos el filtro 'join' de Jinja para unir la lista con comas #}
+                                {{ support_info.levels | join(', ') }}
                             {% else %}
-                                Ninguno asignado
+                                Ningún nivel asignado
                             {% endif %}
                         </td>
                     </tr>
                     {% else %}
+                    {# Este bloque se ejecuta si el diccionario 'support_persons_data' está vacío #}
                     <tr>
-                        <td colspan="3" class="text-center">No hay personas de soporte registradas.</td>
+                        <td colspan="2" class="text-center">No hay personas de soporte asignadas a ninguna clase.</td>
                     </tr>
                     {% endfor %}
                 </tbody>

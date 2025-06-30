@@ -20,20 +20,66 @@ def dashboard():
     
     current_parish_id = priest_dto.Parish.id
     
-    # parish_classes = dal.get_classes_by_parish_id(current_parish_id, include=["Catechist.Person", "Catechizing", "Catechizing.Person", "Schedule.Classroom"])
-    # parish_classes = dal.get_classes_by_parish_id(current_parish_id)
-    parish_classes = dal.get_classes_by_parish_id(current_parish_id, include=["Catechist.Person", "Level", "Schedule.Classroom","ClassPeriod"])
-    catechizings = dal.get_catechizings_by_parish(current_parish_id, include=["Person","Class", "Class.Level"])
-    catechists = dal.get_catechists_by_parish_id(current_parish_id,include=["User", "Person"])
-    support_persons = dal.get_support_persons_by_parish_id(current_parish_id,include=["Person"])
+    parish_classes = dal.get_classes_by_parish_id(
+        current_parish_id, 
+        include=["SupportPerson.Person","Catechist.Person","Level","ClassPeriod","Schedule.ClassRoom"]
+    )
+
+    support_persons_with_levels = {}
+
+    for p_class in parish_classes:
+        # Nos aseguramos de que la clase tenga una persona de soporte asignada
+        if p_class.SupportPerson and p_class.SupportPerson.id:
+            support_person_id = p_class.SupportPerson.id
+
+            # Si es la primera vez que vemos a esta persona, la añadimos al diccionario
+            if support_person_id not in support_persons_with_levels:
+                support_persons_with_levels[support_person_id] = {
+                    'person_data': p_class.SupportPerson, # El DTO completo de SupportPerson
+                    'levels': [] # Una lista para guardar los nombres de los niveles
+                }
+            
+            # Añadimos el nombre del nivel de la clase actual a la lista de la persona
+            if p_class.Level and p_class.Level.Name:
+                support_persons_with_levels[support_person_id]['levels'].append(p_class.Level.Name)
+
+    # --- FIN DE LA LÓGICA DE AGRUPACIÓN ---
+
+    # ... (el resto de tus llamadas a la DAL para catechizings, catechists, etc.) ...
+    catechizings = dal.get_catechizings_by_parish(
+        current_parish_id,
+        include=["Person","Class", "Class.Level"]
+    )
+
+    catechists = dal.get_catechists_by_parish_id(
+        current_parish_id,
+        include=["User", "Person"]
+    )
+    
+    # Pasamos la nueva estructura de datos a la plantilla
+    return render_template(
+        "parish_priest/dashboard.html",
+        title="Dashboard del párroco",
+        catechizings=catechizings,
+        parish_classes=parish_classes,
+        support_persons_data=support_persons_with_levels, 
+        catechists=catechists,
+        calculate_age=calculate_age
+    )
+    
+    # parish_classes = dal.get_classes_by_parish_id(current_parish_id, include=["Catechist.Person", "Level", "Schedule.Classroom","ClassPeriod","Class.Catechist","SupportPerson.Person"])
+    # catechizings = dal.get_catechizings_by_parish(current_parish_id, include=["Person","Class", "Class.Level"])
+    
+    # catechists = dal.get_catechists_by_parish_id(current_parish_id,include=["User", "Person"])
+    # # support_persons = dal.get_support_persons_by_parish_id(current_parish_id,include=["Person"])
        
-    return render_template("parish_priest/dashboard.html",
-                           title="Dashboard del párroco", 
-                           catechizings=catechizings,
-                           parish_classes=parish_classes,
-                           catechists=catechists, 
-                           support_persons=support_persons,
-                           calculate_age=calculate_age)
+    # return render_template("parish_priest/dashboard.html",
+    #                        title="Dashboard del párroco", 
+    #                        catechizings=catechizings,
+    #                        parish_classes=parish_classes,
+    #                        catechists=catechists, 
+    #                     #    support_persons=support_persons,
+    #                        calculate_age=calculate_age)
 
 
 @bp.route('/catechizing/create', methods=['GET', 'POST'])

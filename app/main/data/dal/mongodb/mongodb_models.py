@@ -2,8 +2,6 @@ from mongoengine import (Document, EmbeddedDocument, StringField, IntField, Date
                          BooleanField, ListField, ReferenceField, EmbeddedDocumentField)
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from app.main.data.mapper import Mappable
-
 # class RoleDocument(EmbeddedDocument):
 #     """Rol del usuario, anidado en UserDocument."""
 #     Role = StringField(required=True)
@@ -192,10 +190,11 @@ class CatechizingDocument(Document):
     SiblingsNumber = IntField(required=True)
     ChildNumber = IntField(required=True)
     PayedLevelCourse = BooleanField(required=True)
+    DataSheetInformation = StringField()
 
     # --- Campos Embebidos Refactorizados ---
     School = EmbeddedDocumentField(SchoolEmbedded)
-    DataSheet = EmbeddedDocumentField(DataSheetEmbedded)
+    # DataSheet = EmbeddedDocumentField(DataSheetEmbedded)
     HealthInformation = EmbeddedDocumentField(HealthInformationEmbedded)
     BaptismalCertificate = EmbeddedDocumentField(BaptismalCertificateDocument)
 

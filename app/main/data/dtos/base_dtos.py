@@ -51,7 +51,7 @@ class LevelDTO(BaseDTO):
     Name: str
     MinAge: int
     MaxAge: int
-    PreviousLevel: Optional[LevelDTO]
+    PreviousLevel: Optional[LevelDTO] = None
     TextBook: Optional['TextBookDTO'] = None
 
 # REFACTORIZADO: El horario es un único objeto.
@@ -173,11 +173,11 @@ class CatechizingDTO(BaseDTO):
     SiblingsNumber: int
     ChildNumber: int
     PayedLevelCourse: bool
-    Class: Optional['ClassDTO'] = None
+    DataSheetInformation: str
     
     # --- DTOs Embebidos Refactorizados ---
+    Class: Optional['ClassDTO'] = None
     School: Optional['SchoolDTO'] = None # CAMBIO: Nueva estructura aplanada.
-    DataSheet: Optional['DataSheetDTO'] = None
     HealthInformation: Optional['HealthInformationDTO'] = None # CAMBIO: Utiliza la nueva estructura.
     BaptismalCertificate: Optional['BaptismalCertificateDTO'] = None # CAMBIO: Utiliza la nueva estructura.
     
