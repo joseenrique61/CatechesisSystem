@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, session, redirect, url_for, flash
 from app.auth.authentication import login_required
 from app.main.data.duplicate_column_exception import DuplicateColumnException
-from app.parish_priest.forms import CatechizingForm, CatechizingUpdateForm, ClassForm, SupportPersonForm
+from app.main.forms import CatechizingForm, CatechizingUpdateForm, ClassForm, SupportPersonForm
 from app.main.data.dtos.base_dtos import CatechizingDTO, ClassDTO, SupportPersonDTO
 from app.parish_priest.helpers import calculate_age
 from app import dal
