@@ -41,7 +41,7 @@ class ScheduleEmbedded(EmbeddedDocument):
     DayOfTheWeek = StringField(required=True) # CAMBIO: Simplificado a String.
     StartHour = StringField(required=True)
     EndHour = StringField(required=True)
-    ClassRoom = ReferenceField('ClassroomDocument', required=True)
+    Classroom = ReferenceField('ClassroomDocument', required=True)
 
 class DataSheetEmbedded(EmbeddedDocument):
     """Ficha de datos del catequizando, anidada en CatechizingDocument."""
@@ -99,10 +99,15 @@ class PersonDocument(Document):
     PhoneNumber = EmbeddedDocumentField(PhoneNumberDocument)
     meta = {'collection': 'Person'}
 
+class ClassroomDocument(Document):
+    ClassroomName = StringField(required=True)
+    meta = {'collection': 'Classroom'}
+
 class ParishDocument(Document):
     Name = StringField(required=True)
     Logo = StringField()
     Address = EmbeddedDocumentField(AddressDocument)
+    Classroom = ListField(ReferenceField(ClassroomDocument))
     IsMainParish = BooleanField(default=False)
     meta = {'collection': 'Parish'}
 
@@ -112,10 +117,6 @@ class ClassPeriodDocument(Document):
     CurrentPeriod = BooleanField(default=False)
     meta = {'collection': 'ClassPeriod'}
 
-class ClassroomDocument(Document):
-    ClassRoomName = StringField(required=True)
-    Parish = ReferenceField(ParishDocument, required=True)
-    meta = {'collection': 'ClassRoom'} # Nombre de la colección en el script.
 
 class UserDocument(Document):
     Username = StringField(required=True, unique=True)

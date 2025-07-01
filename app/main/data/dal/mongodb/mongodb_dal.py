@@ -199,48 +199,6 @@ class MongoDBDAL(IDataAccessLayer):
         result = CatechistDocument.objects(id=catechist_id).delete()
         return result > 0
 
-    # --- Catechizing Methods ---
-    # def register_catechizing(self, catechizing_data: CatechizingDTO) -> CatechizingDTO:
-    #     person_doc = self._get_or_create_person(catechizing_data.Person)
-        
-    #     # Obtener los objetos de referencia
-    #     class_doc = ClassDocument.objects(id=catechizing_data.Class.id).first()
-    #     parent_docs = [ParentDocument.objects(id=p.id).first() for p in catechizing_data.Parent]
-    #     godparent_docs = [GodparentDocument.objects(id=g.id).first() for g in catechizing_data.Godparent]
-    #     sacrament_docs = [SacramentDocument.objects(id=s.id).first() for s in catechizing_data.Sacrament]
-        
-    #     # Construir documentos embebidos
-    #     school_doc = SchoolEmbedded(**catechizing_data.SchoolClassYear.to_dict(exclude={'id'}))
-    #     health_info_doc = HealthInformationEmbedded(**catechizing_data.HealthInformation.to_dict(exclude={'id'}))
-    #     data_shet_doc = DataSheetEmbedded(**catechizing_data.DataSheet.to_dict(exclude={'id'}))
-    #     baptismal_certificate_doc = BaptismalCertificateDocument(**catechizing_data.BaptismalCertificate.to_dict(exclude={'id'}))
-        
-    #     level_certificate_list = [LevelCertificateDocument(**catechizing_data.LevelCertificate.to_dict(exclude={'id'}))]
-    #     particular_class_list = [ParticularClassEmbedded(**catechizing_data.ParticularClass.to_dict(exclude={'id'}))]
-    #     attended_class_list = [AttendedClassEmbedded(**catechizing_data.AttendedClass.to_dict(exclude={'id'}))]
-        
-        
-    #     catechizing_doc = CatechizingDocument(
-    #         Person=person_doc,
-    #         Class=class_doc,
-    #         Parent=parent_docs,
-    #         Godparent=godparent_docs,
-    #         Sacrament=sacrament_docs,
-    #         IsLegitimate=catechizing_data.IsLegitimate,
-    #         SiblingsNumber=catechizing_data.SiblingsNumber,
-    #         ChildNumber=catechizing_data.ChildNumber,
-    #         PayedLevelCourse=catechizing_data.PayedLevelCourse,
-    #         SchoolClassYear=school_doc,
-    #         DataSheet=data_shet_doc,
-    #         HealthInformation=health_info_doc,
-    #         BaptismalCertificate=baptismal_certificate_doc,
-    #         ParticularClass=particular_class_list,
-    #         AttendedClass=attended_class_list,
-    #         LevelCertificate=level_certificate_list
-    #     ).save()
-        
-    #     return self._to_dto(catechizing_doc, CatechizingDTO)
-
     def register_catechizing(self, catechizing_data: CatechizingDTO) -> CatechizingDTO:
         person_doc = self._get_or_create_person(catechizing_data.Person)
         
@@ -316,31 +274,32 @@ class MongoDBDAL(IDataAccessLayer):
 
     # Revisar
     def get_catechizings_by_parish(self, parish_id: str, include: list[str] = []) -> List[CatechizingDTO]:
-        classrooms = ClassroomDocument.objects(Parish=parish_id).select_related()
-        classes = ClassDocument.objects(Schedule__ClassRoom__in=classrooms).select_related()
-        docs = CatechizingDocument.objects(Class__in=classes).select_related(max_depth=2)
-        return [self._to_dto(doc, CatechizingDTO, include) for doc in docs]
+        try:
+            parish = ParishDocument.objects.get(id=parish_id)
+            
+            classrooms = parish.Classroom
 
+            if not classrooms:
+                return []
+            
+            classes = ClassDocument.objects(Schedule__Classroom__in=classrooms).select_related()
+            
+            if not classes:
+                return []
+            
+            docs = CatechizingDocument.objects(Class__in=classes).select_related(max_depth=2)
+
+            if not docs:
+                return[]
+            
+            return [self._to_dto(doc, CatechizingDTO, include) for doc in docs]
+        except DoesNotExist:
+            # Si la parroquia con el ID proporcionado no existe, devolvemos una lista vacía.
+            logging.warning(f"Se buscaron aulas para una parroquia inexistente con ID: {parish_id}")
+            return []
+        
     def get_all_catechizings(self, include: list[str] = []) -> List[CatechizingDTO]:
-        # return [self._to_dto(doc, CatechizingDTO, include) for doc in CatechizingDocument.objects.select_related()]
         return [self._to_dto(doc, CatechizingDTO, include) for doc in CatechizingDocument.objects.all()]
-
-    # def update_catechizing(self, catechizing_id: str, catechizing_data: CatechizingDTO) -> Optional[CatechizingDTO]:
-    #     try:
-    #         doc = CatechizingDocument.objects(id=catechizing_id).first()
-            
-    #         if not doc: return None
-    #         doc.PayedLevelCourse = catechizing_data.PayedLevelCourse
-            
-    #         doc.save()
-    #         doc.reload()
-            
-    #     except:
-    #         raise
-    #     finally:
-    #         return self._to_dto(doc, CatechizingDTO)
-
-    # mongodb_dal.py -> DENTRO DE LA CLASE MongoDBDAL
 
     def update_catechizing(self, catechizing_id: str, catechizing_data: CatechizingDTO) -> Optional[CatechizingDTO]:
         """
@@ -448,7 +407,6 @@ class MongoDBDAL(IDataAccessLayer):
         return self._to_dto(doc, UserDTO)
     
     def get_role(self, role: str) -> str:
-        # Role es un EmbeddedDocument, no se puede consultar directamente. Se busca un usuario con ese rol.
         user_role = UserDocument.objects(Role=role).first()
         return user_role if user_role else None
     
@@ -472,10 +430,36 @@ class MongoDBDAL(IDataAccessLayer):
     def get_all_support_persons(self, include: list[str] = []) -> List[SupportPersonDTO]:
         return [self._to_dto(doc, SupportPersonDTO, include) for doc in SupportPersonDocument.objects.all()]
 
-    def get_classroom_in_parish(self, parish_id: str) -> List[ClassroomDTO]:
-        docs = ClassroomDocument.objects(Parish=parish_id)
-        return [self._to_dto(doc, ClassroomDTO) for doc in docs]
+    # def get_classroom_in_parish(self, parish_id: str) -> List[ClassroomDTO]:
+    #     docs = ClassroomDocument.objects(Parish=parish_id)
+    #     return [self._to_dto(doc, ClassroomDTO) for doc in docs]
 
+    def get_classrooms_by_parish(self, parish_id: str) -> List[ClassroomDTO]:
+        """
+        Obtiene una lista de todas las aulas asociadas directamente a una parroquia específica.
+        Esta implementación se basa en el nuevo esquema donde Parish contiene una lista de referencias a Classroom.
+        """
+        try:
+            # 1. Buscamos la parroquia específica por su ID.
+            parish_doc = ParishDocument.objects.get(id=parish_id)
+
+            # 2. Accedemos directamente a la lista de referencias.
+            # MongoEngine carga los documentos Classroom completos automáticamente.
+            classroom_docs = parish_doc.Classroom
+
+            # Si la parroquia no tiene aulas, devolvemos una lista vacía.
+            if not classroom_docs:
+                return []
+
+            # 3. Convertimos cada documento de aula en un DTO.
+            # No es necesario un 'include' complejo aquí, ya que el ClassroomDTO es simple.
+            return [self._to_dto(doc, ClassroomDTO) for doc in classroom_docs]
+
+        except DoesNotExist:
+            # Si la parroquia con el ID proporcionado no existe, devolvemos una lista vacía.
+            logging.warning(f"Se buscaron aulas para una parroquia inexistente con ID: {parish_id}")
+            return []
+        
     def get_class_period_by_id(self, period_id: str) -> Optional[ClassPeriodDTO]:
         doc = ClassPeriodDocument.objects(id=period_id).first()
         return self._to_dto(doc, ClassPeriodDTO)
@@ -491,17 +475,49 @@ class MongoDBDAL(IDataAccessLayer):
     #     return [self._to_dto(doc, ClassDTO, include) for doc in docs]
     # mongodb_dal.py -> MÉTODO CORREGIDO
 
-    def get_classes_by_parish_id(self, parish_id: str, include: list[str] = []) -> List[ClassDTO]:
-        try:
-            # Paso 1: Obtener todas las aulas que pertenecen a la parroquia.
-            classrooms_in_parish = ClassroomDocument.objects(Parish=parish_id)
+    # def get_classes_by_parish_id(self, parish_id: str, include: list[str] = []) -> List[ClassDTO]:
+    #     try:
+    #         # Paso 1: Obtener todas las aulas que pertenecen a la parroquia.
+    #         classrooms_in_parish = ClassroomDocument.objects(Parish=parish_id)
             
+    #         if not classrooms_in_parish:
+    #             return []
+
+    #         docs = ClassDocument.objects(Schedule__ClassRoom__in=classrooms_in_parish).select_related(max_depth=3)
+            
+    #         return [self._to_dto(doc, ClassDTO, include) for doc in docs]
+    #     except Exception as e:
+    #         logging.error(f"Error al obtener clases por parish_id '{parish_id}': {e}")
+    #         return []
+    
+    def get_classes_by_parish_id(self, parish_id: str, include: list[str] = []) -> List[ClassDTO]:
+        """
+        Obtiene todas las clases de una parroquia específica basándose en la nueva
+        estructura de modelos, donde Parish contiene la lista de sus Classrooms.
+        """
+        try:
+            # 1. Buscamos el documento de la parroquia por su ID para empezar.
+            parish_doc = ParishDocument.objects.get(id=parish_id)
+
+            # 2. Obtenemos la lista de documentos de aulas directamente desde la parroquia.
+            # MongoEngine se encarga de cargar los objetos ClassroomDocument completos.
+            classrooms_in_parish = parish_doc.Classroom
+
+            # Si la parroquia no tiene aulas registradas, devolvemos una lista vacía.
             if not classrooms_in_parish:
                 return []
 
-            docs = ClassDocument.objects(Schedule__ClassRoom__in=classrooms_in_parish).select_related(max_depth=3)
+            # 3. Buscamos todas las clases cuyo campo 'Schedule.ClassRoom' esté en nuestra lista de aulas.
+            # El operador `__in` es perfecto para esto.
+            # Usamos max_depth=2 para precargar eficientemente los datos anidados para los DTOs
+            # (ej. Catechist -> Person, Level, ClassPeriod, etc.)
+            docs = ClassDocument.objects(Schedule__Classroom__in=classrooms_in_parish).select_related(max_depth=3)
             
             return [self._to_dto(doc, ClassDTO, include) for doc in docs]
+
+        except DoesNotExist:
+            logging.warning(f"Se buscaron clases para una parroquia inexistente con ID: {parish_id}")
+            return [] # Si no se encuentra la parroquia, no hay clases que devolver.
         except Exception as e:
             logging.error(f"Error al obtener clases por parish_id '{parish_id}': {e}")
             return []

@@ -1,5 +1,5 @@
 from wtforms import Form, HiddenField, StringField, validators, FormField, DateField, RadioField, SubmitField, SelectField
-from wtforms.fields import EmailField
+from wtforms.fields import EmailField, FieldList
 from flask_wtf.file import FileAllowed, FileField, FileRequired
 from flask_wtf import FlaskForm
 from app import dal
@@ -7,14 +7,14 @@ from app.main.data.mapper import Mappable
 from datetime import datetime
 
 class LocationForm(Form):
-    Country: str = StringField('País', [validators.Length(min=1, max=100)])
-    Province: str = StringField('Provincia', [validators.Length(min=1, max=100)])
-    State: str = StringField('Estado', [validators.Length(min=1, max=100)])
+    Country = StringField('País', [validators.Length(min=1, max=100)])
+    Province = StringField('Provincia', [validators.Length(min=1, max=100)])
+    State = StringField('Estado', [validators.Length(min=1, max=100)])
     
 class AddressForm(Form):
-    MainStreet: str = StringField('Calle principal', [validators.Length(min=1, max=100)])
-    Number: str = StringField('Número', [validators.Length(min=1, max=10)])
-    SecondStreet: str = StringField('Calle secundaria', [validators.Length(min=1, max=100)])
+    MainStreet = StringField('Calle principal', [validators.Length(min=1, max=100)])
+    Number = StringField('Número', [validators.Length(min=1, max=10)])
+    SecondStreet = StringField('Calle secundaria', [validators.Length(min=1, max=100)])
     Location: 'LocationForm' = FormField(LocationForm, label='Ubicación')
 
 class PhoneNumberTypeForm(Form):
@@ -41,28 +41,57 @@ class PersonForm(Form):
     PhoneNumber = FormField(PhoneNumberForm, label="Número de teléfono")
     EmailAddress = EmailField('Correo electrónico', [validators.Length(min=1, max=100)])
 
+class ClassroomForm(Form):
+    ClassroomName = StringField("Nombre del aula", [validators.Length(min=1, max=20)])
+    # Paish = FormField(ParishForm, label="Parroquia")
 
 class ParishForm(FlaskForm):
     Name = StringField('Nombre de la parroquia', [validators.Length(min=1, max=100)])
-    LogoImage = FileField('Logo', render_kw={'accept': 'image/png, image/jpeg, image/jpg'}, validators=[FileRequired(), FileAllowed(['jpg', 'png', 'jpeg'])])
+    LogoImage = FileField('Logo', render_kw={'accept': 'image/png, image/jpeg, image/jpg'}, validators=[FileAllowed(['jpg', 'png', 'jpeg'])])
     Address = FormField(AddressForm, label='Dirección')
-    # ClassRoom = FieldList(FormField('ClassroomForm'), min_entries=1, label='Aulas')
+    Classroom = FieldList(FormField(ClassroomForm), min_entries=1, label='Aulas')
     Submit = SubmitField('Registrar')
-
-class ClassroomForm(Form):
-    ClassRoomName = StringField("Nombre del aula", [validators.Length(min=1, max=20)])
-    Paish = FormField(ParishForm, label="Parroquia")
 
 # --- Update forms ---
 
+# class PersonUpdateForm(Form):
+#     FirstName = HiddenField(StringField('Primer nombre', [validators.Length(min=1, max=100)]))
+#     MiddleName = HiddenField(StringField('Segundo nombre', [validators.Length(min=1, max=100)]))
+#     FirstSurname = HiddenField(StringField('Primer apellido', [validators.Length(min=1, max=100)]))
+#     SecondSurname = HiddenField(StringField('Segundo Apellido', [validators.Length(min=1, max=100)]))
+#     BirthLocation: 'LocationForm' = HiddenField(FormField(LocationForm, label='Lugar de nacimiento'))
+#     DNI = HiddenField(StringField('Cédula', [validators.Length(min=10, max=10)]))
+#     Gender = HiddenField(RadioField('Género', choices=[('M', 'Masculino'), ('F', 'Femenino')]))
+#     Address: 'AddressForm' = FormField(AddressForm, label='Dirección de vivienda')
+#     PhoneNumber = FormField(PhoneNumberForm, label="Número de teléfono")
+#     EmailAddress = EmailField('Correo electrónico', [validators.Length(min=1, max=100)])
+
 class PersonUpdateForm(Form):
-    FirstName: str = HiddenField(StringField('Primer nombre', [validators.Length(min=1, max=100)]))
-    MiddleName: str = HiddenField(StringField('Segundo nombre', [validators.Length(min=1, max=100)]))
-    FirstSurname: str = HiddenField(StringField('Primer apellido', [validators.Length(min=1, max=100)]))
-    SecondSurname: str = HiddenField(StringField('Segundo Apellido', [validators.Length(min=1, max=100)]))
-    BirthLocation: 'LocationForm' = HiddenField(FormField(LocationForm, label='Lugar de nacimiento'))
-    DNI: str = HiddenField(StringField('Cédula', [validators.Length(min=10, max=10)]))
-    Gender: str = HiddenField(RadioField('Género', choices=[('M', 'Masculino'), ('F', 'Femenino')]))
-    Address: 'AddressForm' = FormField(AddressForm, label='Dirección de vivienda')
-    PhoneNumber: str = FormField(PhoneNumberForm, label="Número de teléfono")
-    EmailAddress: str = EmailField('Correo electrónico', [validators.Length(min=1, max=100)])
+    """
+    Formulario para actualizar datos de una persona.
+    Algunos campos pueden ser no editables (HiddenField) o se manejan de forma diferente.
+    """
+    # Campos que el usuario puede editar:
+    EmailAddress = EmailField('Correo Electrónico', [validators.DataRequired(), validators.Email()])
+    Address = FormField(AddressForm, label='Dirección de Vivienda')
+    PhoneNumber = FormField(PhoneNumberForm, label="Número de Teléfono")
+
+    # Campos que no se editan pero necesitamos su valor (se pueden ocultar en la plantilla)
+    FirstName = HiddenField()
+    FirstSurname = HiddenField()
+    DNI = HiddenField()
+
+class PersonUpdateForm(Form):
+    """
+    Formulario para actualizar datos de una persona.
+    Algunos campos pueden ser no editables (HiddenField) o se manejan de forma diferente.
+    """
+    # Campos que el usuario puede editar:
+    EmailAddress = EmailField('Correo Electrónico', [validators.DataRequired(), validators.Email()])
+    Address = FormField(AddressForm, label='Dirección de Vivienda')
+    PhoneNumber = FormField(PhoneNumberForm, label="Número de Teléfono")
+
+    # Campos que no se editan pero necesitamos su valor (se pueden ocultar en la plantilla)
+    FirstName = HiddenField()
+    FirstSurname = HiddenField()
+    DNI = HiddenField()

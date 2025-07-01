@@ -95,8 +95,7 @@ def register_catechist():
 def register_parish():
     form = ParishForm()
     if request.method == 'POST' and form.validate_on_submit():
-        # parish = ParishDTO.from_other_obj(form, depth=-1, custom_var_path="data", include=["Classroom"])
-        parish = ParishDTO.from_other_obj(form, depth=2, custom_var_path="data", include=["ClassRoom"])
+        parish = ParishDTO.from_other_obj(form, depth=-1, custom_var_path="data", include=["Classroom"])
 
         try:
             parish, success = dal.register_parish(parish)

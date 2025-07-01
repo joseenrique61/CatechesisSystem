@@ -80,25 +80,22 @@
 
                     {# --- 3. Información Escolar (SchoolClassYearForm anidando SchoolForm) --- #}
                     <fieldset class="mb-4 border p-3">
-                        <legend class="w-auto px-2 h5">{{ form.SchoolClassYear.label.text }}</legend>
-                        {% set scy_form = form.SchoolClassYear %}
-                        <div class="mb-3">
-                            {{ scy_form.SchoolYear.label(class="form-label") }}
-                            {{ scy_form.SchoolYear(class="form-control form-control-sm" + (" is-invalid" if scy_form.SchoolYear.errors else "")) }}
-                            {% if scy_form.SchoolYear.errors %}<div class="invalid-feedback">{% for e in scy_form.SchoolYear.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
-                        </div>
-
-                        <fieldset class="nested-fieldset p-2"> {# SchoolForm anidado #}
-                            <legend class="w-auto px-2 small">{{ scy_form.School.label.text }}</legend>
-                            {% set sch_form = scy_form.School %}
-                            <div class="mb-3">
+                        <legend class="w-auto px-2 h5">{{ form.School.label.text }}</legend>
+                        {% set sch_form = form.School %} {# Alias para el subformulario School #}
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ sch_form.SchoolYear.label(class="form-label") }}
+                                {{ sch_form.SchoolYear(class="form-control form-control-sm" + (" is-invalid" if sch_form.SchoolYear.errors else "")) }}
+                                {% if sch_form.SchoolYear.errors %}<div class="invalid-feedback">{% for e in sch_form.SchoolYear.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
                                 {{ sch_form.SchoolName.label(class="form-label") }}
                                 {{ sch_form.SchoolName(class="form-control form-control-sm" + (" is-invalid" if sch_form.SchoolName.errors else "")) }}
                                 {% if sch_form.SchoolName.errors %}<div class="invalid-feedback">{% for e in sch_form.SchoolName.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
                             </div>
-                        </fieldset>
+                        </div>
                     </fieldset>
-
+                    
                     {# --- 4. Asignación de Clase y Pago --- #}
                     <fieldset class="mb-4 border p-3">
                         <legend class="w-auto px-2 h5">Asignación y Administrativo</legend>
@@ -215,16 +212,52 @@
                             </button>
                         </fieldset>
                         
-                        {# Contacto de Emergencia (PersonForm anidado en HealthInformationForm) #}
                         <fieldset class="nested-fieldset p-2 mt-3">
-                            <legend class="w-auto px-2 small">{{ hi_form.EmergencyContact.label.text }}</legend>
-                            {% set p_form = hi_form.EmergencyContact %} {# Alias para el PersonForm del contacto emergencia #}
-                            {% include 'partials/_person_form_fields.html' with context %}
+                            <legend class="w-auto px-2 small">Contacto de Emergencia</legend>
+
+                            {# El SelectField para elegir un contacto existente (sin cambios) #}
+                            <div class="mb-3">
+                                {{ hi_form.EmergencyContact.label(class="form-label") }}
+                                {{ hi_form.EmergencyContact(class="form-select form-select-sm") }}
+                            </div>
+
+                            {# El Checkbox para mostrar/ocultar el formulario de nuevo contacto (sin cambios) #}
+                            <div class="form-check mb-3">
+                                {{ hi_form.RegisterNewContact(class="form-check-input") }}
+                                {{ hi_form.RegisterNewContact.label(class="form-check-label") }}
+                            </div>
+
+                            {# El contenedor para el formulario de nuevo contacto, inicialmente oculto #}
+                            <div id="new-emergency-contact-container" style="display: none;">
+                                <p class="text-muted small">Por favor, complete los datos de la nueva persona a registrar como contacto.</p>
+                                
+                                <!-- LA CORRECCIÓN CLAVE ESTÁ AQUÍ -->
+                                {# Apuntamos a 'NewEmergencyContact', que SÍ es un PersonForm #}
+                                {% set p_form = hi_form.NewEmergencyContact %}
+                                
+                                {# Ahora el include recibe el objeto correcto #}
+                                {% include 'partials/_person_form_fields.html' %}
+                            </div>
                         </fieldset>
                     </fieldset>
                     
                     {# --- 8. Hoja de Datos y Clases Particulares --- #}
                     <fieldset class="mb-4 border p-3">
+                        <legend class="w-auto px-2 h5">Otros Datos</legend>
+                        <div class="mb-3">
+                            {{ form.DataSheetInformation.label(class="form-label") }}
+                            {{ form.DataSheetInformation(class="form-control" + (" is-invalid" if form.DataSheetInformation.errors else ""), rows="4") }}
+                            {% if form.DataSheetInformation.errors %}<div class="invalid-feedback">{% for e in form.DataSheetInformation.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check mt-1">
+                                {{ form.HasParticularClass(class="form-check-input" + (" is-invalid" if form.HasParticularClass.errors else "")) }}
+                                {{ form.HasParticularClass.label(class="form-check-label") }}
+                            </div>
+                             {% if form.HasParticularClass.errors %}<div class="invalid-feedback d-block">{% for e in form.HasParticularClass.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
+                        </div>
+                    </fieldset>
+                    <!-- <fieldset class="mb-4 border p-3">
                         <legend class="w-auto px-2 h5">Otros Datos</legend>
                         <div class="mb-3">
                             {{ form.DataSheet.DataSheetInformation.label(class="form-label") }}
@@ -238,7 +271,7 @@
                             </div>
                              {% if form.HasParticularClass.errors %}<div class="invalid-feedback d-block">{% for e in form.HasParticularClass.errors %}<span>{{e}}</span><br>{% endfor %}</div>{% endif %}
                         </div>
-                    </fieldset>
+                    </fieldset> -->
 
                     <div class="d-grid gap-2">
                         {{ form.Submit(class="btn btn-primary btn-lg") }}
@@ -256,6 +289,88 @@
 <script>
 // Script genérico para manejar FieldLists (Padres, Padrinos, Alergias)
 document.addEventListener('DOMContentLoaded', function () {
+    // Referencias a los elementos clave del DOM
+    const emergencyContactSelect = document.getElementById('HealthInformation-EmergencyContact');
+    const registerNewContactCheckbox = document.getElementById('HealthInformation-RegisterNewContact');
+    const newContactContainer = document.getElementById('new-emergency-contact-container');
+    
+    // --- Lógica para mostrar/ocultar el formulario de nuevo contacto ---
+    registerNewContactCheckbox.addEventListener('change', function() {
+        if (this.checked) {
+            newContactContainer.style.display = 'block';
+            emergencyContactSelect.disabled = true; // Deshabilitar el select si se registra uno nuevo
+            emergencyContactSelect.value = ''; // Limpiar la selección
+        } else {
+            newContactContainer.style.display = 'none';
+            emergencyContactSelect.disabled = false; // Habilitar el select de nuevo
+        }
+    });
+
+    // --- Lógica para actualizar dinámicamente el SelectField ---
+    function updateEmergencyContactOptions() {
+        // Guardar la opción seleccionada actualmente para intentar restaurarla
+        const currentSelectedValue = emergencyContactSelect.value;
+        
+        // Vaciar las opciones existentes (excepto la primera)
+        while (emergencyContactSelect.options.length > 1) {
+            emergencyContactSelect.remove(1);
+        }
+
+        const contacts = new Map(); // Usar un Map para evitar duplicados por DNI
+
+        // Función para procesar un contenedor (Padres o Padrinos)
+        const processContainer = (containerId, role) => {
+            document.querySelectorAll(`#${containerId} .fieldlist-entry`).forEach((entry, index) => {
+                const firstName = entry.querySelector(`input[id$="-FirstName"]`).value.trim();
+                const lastName = entry.querySelector(`input[id$="-FirstSurname"]`).value.trim();
+                const dni = entry.querySelector(`input[id$="-DNI"]`).value.trim();
+                
+                // Solo añadir si tiene nombre, apellido y DNI (el DNI es buen identificador)
+                if (firstName && lastName && dni) {
+                    const fullName = `${firstName} ${lastName} (${role})`;
+                    // Si el DNI no está ya en el mapa, lo añadimos
+                    if (!contacts.has(dni)) {
+                        contacts.set(dni, fullName);
+                    }
+                }
+            });
+        };
+        
+        // Procesar contenedores de Padres y Padrinos
+        processContainer('parent-list', 'Padre/Tutor');
+        processContainer('godparent-list', 'Padrino/Madrina');
+        
+        // Poblar el select con los contactos encontrados
+        contacts.forEach((fullName, dni) => {
+            const option = document.createElement('option');
+            option.value = dni; // Usamos el DNI como valor único
+            option.textContent = fullName;
+            emergencyContactSelect.appendChild(option);
+        });
+
+        // Intentar restaurar la selección previa si todavía existe
+        if (currentSelectedValue && contacts.has(currentSelectedValue)) {
+            emergencyContactSelect.value = currentSelectedValue;
+        }
+    }
+
+    // --- Añadir listeners a los campos de texto relevantes ---
+    // Seleccionamos el contenedor principal del formulario
+    const mainForm = document.querySelector('form');
+
+    // Usamos delegación de eventos para mayor eficiencia
+    mainForm.addEventListener('input', function(event) {
+        // Verificamos si el input que cambió es uno de los que nos interesa
+        if (event.target.matches('#parent-list input, #godparent-list input')) {
+            // Un pequeño debounce para no actualizar en cada tecla, sino tras un breve instante
+            clearTimeout(window.updateTimeout);
+            window.updateTimeout = setTimeout(updateEmergencyContactOptions, 300);
+        }
+    });
+
+    // Llamar a la función una vez al cargar la página por si hay datos pre-poblados
+    updateEmergencyContactOptions();
+
     document.querySelectorAll('.add-entry').forEach(button => {
         button.addEventListener('click', function () {
             const targetType = this.dataset.target; // 'parent', 'godparent', 'allergy'

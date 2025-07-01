@@ -65,7 +65,7 @@ class ScheduleDTO(BaseDTO):
     DayOfTheWeek: str  # CAMBIO: Simplificado a string.
     StartHour: str
     EndHour: str
-    ClassRoom: Optional['ClassroomDTO'] = None
+    Classroom: Optional['ClassroomDTO'] = None
 
 class AddressDTO(BaseDTO):
     MainStreet: str
@@ -85,6 +85,7 @@ class ParishDTO(BaseDTO):
     Logo: Optional[str] = None
     LogoImage: Optional[FileStorage] = None
     Address: Optional['AddressDTO'] = None
+    Classroom: List['ClassroomDTO'] = None 
     IsMainParish: bool
 
 class SacramentDTO(BaseDTO):
@@ -116,7 +117,7 @@ class SchoolDTO(BaseDTO):
     SchoolName: str
 
 class ClassroomDTO(BaseDTO):
-    ClassRoomName: str
+    ClassroomName: str
     Parish: Optional['ParishDTO'] = None
 
 class CatechistDTO(BaseDTO):
@@ -138,7 +139,7 @@ class ParishPriestDTO(BaseDTO):
 
 class SupportPersonDTO(BaseDTO):
     Person: Optional['PersonDTO'] = None
-    Parish: Optional['ParishDTO'] = None # CAMBIO: Añadido Parish.
+    Parish: Optional['ParishDTO'] = None
     
 class MainParishDTO(BaseDTO):
     Parish: Optional[ParishDTO] = None
@@ -148,7 +149,7 @@ class ClassDTO(BaseDTO):
     SupportPerson: Optional['SupportPersonDTO'] = None
     Catechist: Optional['CatechistDTO'] = None
     Level: Optional['LevelDTO'] = None
-    Schedule: Optional['ScheduleDTO'] = None # CAMBIO: De List a Optional single object.
+    Schedule: Optional['ScheduleDTO'] = None
 
 class ClassAuthorizationDTO(BaseDTO):
     IssueDate: datetime.date
@@ -158,10 +159,9 @@ class ClassAuthorizationDTO(BaseDTO):
 class DataSheetDTO(BaseDTO):
     DataSheetInformation: str
 
-# REFACTORIZADO: DTO de certificado de bautismo aplanado.
 class BaptismalCertificateDTO(BaseDTO):
     IssueDate: datetime.date
-    BaptismalBook: Optional['BaptismalBookDTO'] = None # CAMBIO: Nombre y estructura.
+    BaptismalBook: Optional['BaptismalBookDTO'] = None
     ParishPriest: Optional['ParishPriestDTO'] = None
 
 class AttendedClassDTO(BaseDTO):

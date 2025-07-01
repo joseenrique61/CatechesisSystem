@@ -158,7 +158,7 @@ class IDataAccessLayer(ABC):
     #     pass
 
     @abstractmethod
-    def get_classroom_in_parish(self, parish_id: str) -> List[ClassroomDTO]:
+    def get_classrooms_by_parish(self, parish_id: str) -> List[ClassroomDTO]:
         pass
 
     @abstractmethod

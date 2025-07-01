@@ -138,8 +138,13 @@ class Mappable:
             else: # Asignación directa
                 # <<<--- INICIO DE LA LÓGICA CORREGIDA Y SIMPLIFICADA ---
                 # Esta es la parte más importante de la corrección.
+                if debug: print(f"[DEBUG]   '{attr_name}' no es Mappable anidado/lista de Mappables o no se reconoce. Asignación directa.")
                 
                 value_to_assign = getattr(db_obj, attr_name)
+                
+                if custom_var_path != "":
+                    value_to_assign = getattr(value_to_assign, custom_var_path)
+                kwargs_for_constructor[attr_name] = value_to_assign
 
                 # Convertimos ObjectId a string específicamente para el campo 'id'.
                 if attr_name == 'id' and isinstance(value_to_assign, ObjectId):

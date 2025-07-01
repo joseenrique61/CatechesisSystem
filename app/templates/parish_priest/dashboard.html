@@ -89,7 +89,7 @@
                         </td>
                         <td>
                             {% if p_class.Schedule %}
-                                Aula: {{ p_class.Schedule.ClassRoom.ClassRoomName }}. {{ p_class.Schedule.DayOfTheWeek.DayOfTheWeek }}: {{ p_class.Schedule.StartHour }} - {{ p_class.Schedule.EndHour }} <br>
+                                Aula: {{ p_class.Schedule.Classroom.ClassroomName }}. {{ p_class.Schedule.DayOfTheWeek.DayOfTheWeek }}: {{ p_class.Schedule.StartHour }} - {{ p_class.Schedule.EndHour }} <br>
                             {% else %}
                                 Horario no definido
                             {% endif %}
