@@ -22,10 +22,19 @@ class MongoDBDAL(IDataAccessLayer):
 
     # --- Funciones de Ayuda Internas ---
 
+    # def _to_dto(self, document, dto_class, include: list[str] = [], exclude: list[str] = []):
+    #     if not document:
+    #         return None
+    #     return dto_class.from_other_obj(document, include=include + ['id'], exclude=exclude)
+    
     def _to_dto(self, document, dto_class, include: list[str] = [], exclude: list[str] = []):
         if not document:
             return None
-        return dto_class.from_other_obj(document, include=include + ['id'], exclude=exclude)
+        # Esta es la forma más simple de manejar la conversión
+        # dto_instance = dto_class.from_orm(document)
+        dto_instance =  dto_class.from_other_obj(document, include=include + ['id'], exclude=exclude)
+        dto_instance.id = str(document.id)
+        return dto_instance
 
     def _get_or_create_person(self, person_data: PersonDTO) -> PersonDocument:
         if person_data.DNI and (doc := PersonDocument.objects(DNI=person_data.DNI).first()):
@@ -35,17 +44,22 @@ class MongoDBDAL(IDataAccessLayer):
 
         address_doc = None
         if addr_data := person_data.Address:
-            location_doc = LocationDocument(**addr_data.Location.to_dict()) if addr_data.Location else None
+            # CORRECCIÓN AQUÍ: Usamos .model_dump() en lugar de .to_dict()
+            location_doc = LocationDocument(**addr_data.Location.model_dump()) if addr_data.Location else None
             address_doc = AddressDocument(MainStreet=addr_data.MainStreet, Number=addr_data.Number, SecondStreet=addr_data.SecondStreet, Location=location_doc)
         
         phone_doc = None
         if phone_data := person_data.PhoneNumber:
-            phone_type_doc = PhoneNumberTypeDocument.objects(id=phone_data.PhoneNumberType.id).first()
+            # Asegurarse de que el PhoneNumberType y su id existen antes de buscar
+            phone_type_doc = None
+            if phone_data.PhoneNumberType and phone_data.PhoneNumberType.id:
+                phone_type_doc = PhoneNumberTypeDocument.objects(id=phone_data.PhoneNumberType.id).first()
             phone_doc = PhoneNumberDocument(PhoneNumber=phone_data.PhoneNumber, PhoneNumberType=phone_type_doc)
 
         birth_location_doc = None
         if birth_loc_data := person_data.BirthLocation:
-            birth_location_doc = LocationDocument(**birth_loc_data.to_dict())
+            # CORRECCIÓN AQUÍ: Usamos .model_dump() en lugar de .to_dict()
+            birth_location_doc = LocationDocument(**birth_loc_data.model_dump())
 
         new_person = PersonDocument(
             FirstName=person_data.FirstName, MiddleName=person_data.MiddleName,
@@ -56,7 +70,106 @@ class MongoDBDAL(IDataAccessLayer):
         ).save()
         
         return new_person
+    
+    def _get_or_create_parent(self, parent_dto: ParentDTO) -> ParentDocument:
+        """Crea la Persona y luego el rol de Padre/Tutor, o lo devuelve si ya existe."""
+        if not parent_dto or not parent_dto.Person: return None
+        
+        person_doc = self._get_or_create_person(parent_dto.Person)
+        
+        # Evita crear roles duplicados para la misma persona
+        parent_doc = ParentDocument.objects(Person=person_doc).first()
+        if parent_doc:
+            return parent_doc
+            
+        new_parent_doc = ParentDocument(
+            Person=person_doc,
+            Ocuppation=parent_dto.Ocuppation
+        ).save()
+        return new_parent_doc
 
+    def _get_or_create_godparent(self, godparent_dto: GodparentDTO) -> GodparentDocument:
+        """Crea la Persona y luego el rol de Padrino/Madrina, o lo devuelve si ya existe."""
+        if not godparent_dto or not godparent_dto.Person: return None
+            
+        person_doc = self._get_or_create_person(godparent_dto.Person)
+
+        godparent_doc = GodparentDocument.objects(Person=person_doc).first()
+        if godparent_doc:
+            return godparent_doc
+
+        new_godparent_doc = GodparentDocument(Person=person_doc).save()
+        return new_godparent_doc
+
+    def register_catechizing(self, catechizing_data: CatechizingDTO) -> CatechizingDTO:
+        # PASO 1: Crear la persona principal del catequizando.
+        person_doc = self._get_or_create_person(catechizing_data.Person)
+
+        # PASO 2: Iterar y crear los documentos de Padres/Tutores.
+        parent_docs = [self._get_or_create_parent(p) for p in catechizing_data.Parent if p]
+        
+        # PASO 3: Iterar y crear los documentos de Padrinos/Madrinas.
+        godparent_docs = [self._get_or_create_godparent(g) for g in catechizing_data.Godparent if g]
+
+        # PASO 4: Obtener las referencias a otros documentos existentes.
+        class_doc = ClassDocument.objects(id=catechizing_data.Class.id).first() if catechizing_data.Class else None
+        # Los sacramentos ya existen, solo los enlazamos.
+        
+        sacrament_ids = [s.id for s in catechizing_data.Sacrament if s.id]
+        sacrament_docs = list(SacramentDocument.objects(id__in=sacrament_ids))
+        
+        # PASO 5: Construir los documentos embebidos.
+        school_doc = SchoolEmbedded(**catechizing_data.School.model_dump()) if catechizing_data.School else None
+        
+        health_info_doc = None
+        if health_data := catechizing_data.HealthInformation:
+            contact_person_doc = None
+            # Si se proporcionó un contacto de emergencia...
+            if health_data.EmergencyContact:
+                # ...usamos nuestro método helper para buscarlo o crearlo en la BDD.
+                contact_person_doc = self._get_or_create_person(health_data.EmergencyContact)
+            
+            # Ahora creamos el documento embebido con la referencia correcta.
+            health_info_doc = HealthInformationEmbedded(
+                ImportantAspects=health_data.ImportantAspects,
+                BloodType=health_data.BloodType,
+                EmergencyContact=contact_person_doc, # Pasamos el documento de MongoEngine
+                Allergy=health_data.Allergy
+            )
+
+        baptismal_cert_doc = None
+        if bapt_cert_data := catechizing_data.BaptismalCertificate:
+            priest_doc = ParishPriestDocument.objects(id=bapt_cert_data.ParishPriest.id).first() if bapt_cert_data.ParishPriest else None
+            book_doc = BaptismalBookEmbedded(**bapt_cert_data.BaptismalBook.model_dump()) if bapt_cert_data.BaptismalBook else None
+            baptismal_cert_doc = BaptismalCertificateDocument(
+                IssueDate=bapt_cert_data.IssueDate,
+                ParishPriest=priest_doc,
+                BaptismalBook=book_doc
+            )
+
+        # PASO 6: Ensamblar y guardar el documento principal de Catequizando con las referencias correctas.
+        catechizing_doc = CatechizingDocument(
+            Person=person_doc,
+            Class=class_doc,
+            IsLegitimate=catechizing_data.IsLegitimate,
+            SiblingsNumber=catechizing_data.SiblingsNumber,
+            ChildNumber=catechizing_data.ChildNumber,
+            PayedLevelCourse=catechizing_data.PayedLevelCourse,
+            School=school_doc,
+            DataSheetInformation=catechizing_data.DataSheetInformation,
+            HealthInformation=health_info_doc,
+            BaptismalCertificate=baptismal_cert_doc,
+            Parent=parent_docs,         # <--- Lista de ParentDocuments creados
+            Godparent=godparent_docs,   # <--- Lista de GodparentDocuments creados
+            Sacrament=sacrament_docs,
+            # Las listas vacías se inicializan así por defecto
+            LevelCertificate=[],
+            AttendedClass=[],
+            ParticularClass=[]
+        ).save()
+        
+        return self._to_dto(catechizing_doc, CatechizingDTO)
+    
     # --- Parish Methods ---
     def register_parish(self, parish_data: ParishDTO) -> ParishDTO:
         # (Implementación ya proporcionada en la respuesta anterior, se mantiene igual)
@@ -199,78 +312,16 @@ class MongoDBDAL(IDataAccessLayer):
         result = CatechistDocument.objects(id=catechist_id).delete()
         return result > 0
 
-    def register_catechizing(self, catechizing_data: CatechizingDTO) -> CatechizingDTO:
-        person_doc = self._get_or_create_person(catechizing_data.Person)
-        
-        # Obtener los objetos de referencia principales
-        class_doc = ClassDocument.objects(id=catechizing_data.Class.id).first() if catechizing_data.Class else None
-        parent_docs = [ParentDocument.objects(id=p.id).first() for p in catechizing_data.Parent if p.id]
-        godparent_docs = [GodparentDocument.objects(id=g.id).first() for g in catechizing_data.Godparent if g.id]
-        sacrament_docs = [SacramentDocument.objects(id=s.id).first() for s in catechizing_data.Sacrament if s.id]
-        level_certificate_docs = [ClassDocument.objects(id=c.id).first() for c in catechizing_data.LevelCertificate if c.id]
-
-        # --- Construir documentos embebidos con la nueva estructura ---
-
-        # CAMBIO: School ahora es un objeto simple
-        school_doc = None
-        if school_data := catechizing_data.School:
-            school_doc = SchoolEmbedded(**school_data.model_dump())
-            
-        # CAMBIO: HealthInformation simplificado
-        health_info_doc = None
-        if health_data := catechizing_data.HealthInformation:
-            contact_person_doc = PersonDocument.objects(id=health_data.EmergencyContact.id).first() if health_data.EmergencyContact else None
-            health_info_doc = HealthInformationEmbedded(
-                ImportantAspects=health_data.ImportantAspects,
-                BloodType=health_data.BloodType,
-                EmergencyContact=contact_person_doc,
-                Allergy=health_data.Allergy  # Se pasa la lista de strings directamente
-            )
-
-        # CAMBIO: BaptismalCertificate con estructura aplanada
-        baptismal_cert_doc = None
-        if bapt_cert_data := catechizing_data.BaptismalCertificate:
-            priest_doc = ParishPriestDocument.objects(id=bapt_cert_data.ParishPriest.id).first() if bapt_cert_data.ParishPriest else None
-            book_doc = BaptismalBookEmbedded(**bapt_cert_data.BaptismalBook.model_dump()) if bapt_cert_data.BaptismalBook else None
-            baptismal_cert_doc = BaptismalCertificateDocument(
-                IssueDate=bapt_cert_data.IssueDate,
-                ParishPriest=priest_doc,
-                BaptismalBook=book_doc
-            )
-            
-        # Construir listas de embebidos (sin cambios aquí)
-        attended_class_list = [AttendedClassEmbedded(**ac.model_dump()) for ac in catechizing_data.AttendedClass]
-        particular_class_list = [ParticularClassEmbedded(**pc.model_dump()) for pc in catechizing_data.ParticularClass]
-        
-        catechizing_doc = CatechizingDocument(
-            Person=person_doc,
-            Class=class_doc,
-            IsLegitimate=catechizing_data.IsLegitimate,
-            SiblingsNumber=catechizing_data.SiblingsNumber,
-            ChildNumber=catechizing_data.ChildNumber,
-            PayedLevelCourse=catechizing_data.PayedLevelCourse,
-            School=school_doc,
-            DataSheet=catechizing_data.DataSheet,
-            HealthInformation=health_info_doc,
-            BaptismalCertificate=baptismal_cert_doc,
-            Parent=parent_docs,
-            Godparent=godparent_docs,
-            Sacrament=sacrament_docs,
-            LevelCertificate=level_certificate_docs,
-            AttendedClass=attended_class_list,
-            ParticularClass=particular_class_list
-        ).save()
-        
-        
-        return self._to_dto(catechizing_doc, CatechizingDTO)
-
-    def get_catechizing_by_id(self, catechizing_id: str) -> Optional[CatechizingDTO]:
+    def get_catechizing_by_id(self, catechizing_id: str, include: list[str] = []) -> Optional[CatechizingDTO]:
         doc = CatechizingDocument.objects(id=catechizing_id).first()
-        return self._to_dto(doc, CatechizingDTO)
+        return self._to_dto(doc, CatechizingDTO, include)
 
     def get_catechizings_by_class(self, class_id: str) -> List[CatechizingDTO]:
         docs = CatechizingDocument.objects(Class=class_id).select_related()
         return [self._to_dto(doc, CatechizingDTO) for doc in docs]
+
+    def get_all_sacraments(self) -> List[SacramentDTO]:
+        return [self._to_dto(doc, SacramentDTO) for doc in SacramentDocument.objects.all()]
 
     # Revisar
     def get_catechizings_by_parish(self, parish_id: str, include: list[str] = []) -> List[CatechizingDTO]:
@@ -303,47 +354,45 @@ class MongoDBDAL(IDataAccessLayer):
 
     def update_catechizing(self, catechizing_id: str, catechizing_data: CatechizingDTO) -> Optional[CatechizingDTO]:
         """
-        Actualiza un documento Catequizing existente en la base de datos.
-        Maneja la actualización de campos simples, embebidos y referenciados.
+        Actualiza un documento Catequizing.
+        CORREGIDO: Maneja DTOs parciales para no sobrescribir datos no deseados.
         """
         try:
-            # 1. Obtener el documento original de la base de datos que se va a actualizar.
             doc_to_update = CatechizingDocument.objects.get(id=catechizing_id)
         except DoesNotExist:
             logging.error(f"Se intentó actualizar un catequizando inexistente con ID: {catechizing_id}")
             return None
 
-        # --- 2. Actualizar campos simples y directos ---
-        # Estos campos vienen directamente del formulario de actualización.
-        doc_to_update.SiblingsNumber = catechizing_data.SiblingsNumber
-        doc_to_update.PayedLevelCourse = catechizing_data.PayedLevelCourse
-        doc_to_update.DataSheet = catechizing_data.DataSheet
+        # --- 2. Actualizar campos simples y directos (con verificación) ---
+        
+        if catechizing_data.PayedLevelCourse is not None:
+            doc_to_update.PayedLevelCourse = catechizing_data.PayedLevelCourse
+            
+        if catechizing_data.DataSheetInformation is not None:
+            doc_to_update.DataSheetInformation = catechizing_data.DataSheetInformation
+
 
         # --- 3. Actualizar el documento referenciado 'Person' ---
-        # No cambiamos la referencia, sino los datos DENTRO del documento Person.
         if person_dto := catechizing_data.Person:
             person_doc = doc_to_update.Person
-            if not person_doc: # Verificación de seguridad
-                logging.error(f"Inconsistencia de datos: Catequizando {catechizing_id} no tiene Persona asociada.")
-            else:
-                person_doc.EmailAddress = person_dto.EmailAddress
+            if person_doc:
+                if person_dto.EmailAddress:
+                    person_doc.EmailAddress = person_dto.EmailAddress
                 
-                # Actualizar el documento embebido Address dentro de Person
                 if addr_dto := person_dto.Address:
                     loc_dto = addr_dto.Location
                     location_doc = LocationDocument(Province=loc_dto.Province, State=loc_dto.State, Country=loc_dto.Country)
                     person_doc.Address = AddressDocument(MainStreet=addr_dto.MainStreet, Number=addr_dto.Number, SecondStreet=addr_dto.SecondStreet, Location=location_doc)
                 
-                # Actualizar el documento embebido PhoneNumber dentro de Person
                 if phone_dto := person_dto.PhoneNumber:
-                    phone_type_doc = PhoneNumberTypeDocument.objects(id=phone_dto.PhoneNumberType.id).first()
+                    phone_type_doc = None
+                    if phone_dto.PhoneNumberType and phone_dto.PhoneNumberType.id:
+                        phone_type_doc = PhoneNumberTypeDocument.objects(id=phone_dto.PhoneNumberType.id).first()
                     person_doc.PhoneNumber = PhoneNumberDocument(PhoneNumber=phone_dto.PhoneNumber, PhoneNumberType=phone_type_doc)
                 
-                # Guardamos el documento Person modificado
                 person_doc.save()
 
         # --- 4. Actualizar la referencia a 'Class' ---
-        # Aquí sí cambiamos a qué documento 'Class' apunta el catequizando.
         if class_dto := catechizing_data.Class:
             if class_dto.id and (not doc_to_update.Class or doc_to_update.Class.id != class_dto.id):
                 try:
@@ -353,43 +402,39 @@ class MongoDBDAL(IDataAccessLayer):
                     logging.warning(f"Se intentó asignar una clase inexistente (ID: {class_dto.id}) al catequizando {catechizing_id}")
 
         # --- 5. Actualizar documentos embebidos ---
-        
-        # Actualizar School (antes SchoolClassYear)
         if school_dto := catechizing_data.School:
             doc_to_update.School = SchoolEmbedded(
                 SchoolYear=school_dto.SchoolYear,
                 SchoolName=school_dto.SchoolName
             )
             
-        # Actualizar HealthInformation
         if health_dto := catechizing_data.HealthInformation:
             emergency_contact_doc = None
             if health_dto.EmergencyContact and health_dto.EmergencyContact.id:
-                emergency_contact_doc = PersonDocument.objects(id=health_dto.EmergencyContact.id).first()
+                emergency_contact_doc = PersonDocument.objects.with_id(health_dto.EmergencyContact.id)
+                if not emergency_contact_doc:
+                    pass
                 
             doc_to_update.HealthInformation = HealthInformationEmbedded(
                 ImportantAspects=health_dto.ImportantAspects,
                 BloodType=health_dto.BloodType,
-                Allergy=health_dto.Allergy, # Es una lista de strings, se asigna directamente
+                Allergy=health_dto.Allergy,
                 EmergencyContact=emergency_contact_doc
             )
 
         # --- 6. Guardar el documento Catechizing principal ---
-        # Este 'save' persiste todos los cambios realizados en doc_to_update (como el cambio de Class).
         try:
             doc_to_update.save()
         except Exception as e:
             logging.error(f"Error al guardar las actualizaciones para el catequizando {catechizing_id}: {e}")
-            return None # O manejar el error de forma más específica
+            return None
 
         # --- 7. Devolver el DTO con los datos actualizados ---
-        # Usamos fetch_reload() para asegurar que obtenemos la versión más reciente de la BDD.
-        # El 'include' es crucial para que el DTO devuelto venga con todos los datos anidados.
         final_doc = doc_to_update.fetch_reload()
         return self._to_dto(final_doc, CatechizingDTO, include=[
             "Person.Address.Location", 
             "Person.PhoneNumber.PhoneNumberType", 
-            "Class.Level", 
+            "Class.Level", "Class.Schedule",
             "HealthInformation.EmergencyContact"
         ])
 
@@ -420,6 +465,43 @@ class MongoDBDAL(IDataAccessLayer):
     def get_class_by_id(self, class_id: str) -> Optional[ClassDTO]:
         doc = ClassDocument.objects(id=class_id).select_related().first()
         return self._to_dto(doc, ClassDTO)
+    
+    def register_class(self, class_data: ClassDTO) -> ClassDTO:
+        """
+        Registra una nueva clase en la base de datos.
+        """
+        try:
+            # 1. Obtener los documentos de referencia a partir de los IDs en el DTO
+            class_period_doc = ClassPeriodDocument.objects.get(id=class_data.ClassPeriod.id)
+            level_doc = LevelDocument.objects.get(id=class_data.Level.id)
+            catechist_doc = CatechistDocument.objects.get(id=class_data.Catechist.id)
+            support_person_doc = SupportPersonDocument.objects.get(id=class_data.SupportPerson.id) if class_data.SupportPerson else None
+            classroom_doc = ClassroomDocument.objects.get(id=class_data.Schedule.Classroom.id)
+
+            # 2. Construir el documento embebido del horario
+            schedule_embedded = ScheduleEmbedded(
+                DayOfTheWeek=class_data.Schedule.DayOfTheWeek,
+                StartHour=class_data.Schedule.StartHour,
+                EndHour=class_data.Schedule.EndHour,
+                Classroom=classroom_doc
+            )
+
+            # 3. Crear y guardar el documento principal de la clase
+            new_class_doc = ClassDocument(
+                ClassPeriod=class_period_doc,
+                Level=level_doc,
+                Catechist=catechist_doc,
+                SupportPerson=support_person_doc,
+                Schedule=schedule_embedded
+            ).save()
+
+            return self._to_dto(new_class_doc, ClassDTO)
+        except DoesNotExist as e:
+            logging.error(f"Error de referencia al registrar clase: un ID proporcionado no existe. Detalles: {e}")
+            raise ValueError(f"No se pudo registrar la clase. Referencia no encontrada: {e}")
+        except Exception as e:
+            logging.error(f"Error inesperado al registrar clase: {e}")
+            raise
 
     def get_all_periods(self) -> List[ClassPeriodDTO]:
         return [self._to_dto(doc, ClassPeriodDTO) for doc in ClassPeriodDocument.objects.order_by('-EndDate')]
@@ -429,10 +511,6 @@ class MongoDBDAL(IDataAccessLayer):
 
     def get_all_support_persons(self, include: list[str] = []) -> List[SupportPersonDTO]:
         return [self._to_dto(doc, SupportPersonDTO, include) for doc in SupportPersonDocument.objects.all()]
-
-    # def get_classroom_in_parish(self, parish_id: str) -> List[ClassroomDTO]:
-    #     docs = ClassroomDocument.objects(Parish=parish_id)
-    #     return [self._to_dto(doc, ClassroomDTO) for doc in docs]
 
     def get_classrooms_by_parish(self, parish_id: str) -> List[ClassroomDTO]:
         """
@@ -469,27 +547,6 @@ class MongoDBDAL(IDataAccessLayer):
         support_doc = SupportPersonDocument(Person=person_doc).save()
         return self._to_dto(support_doc, SupportPersonDTO)
 
-    # def get_classes_by_parish_id(self, parish_id: str, include: list[str] = []) -> List[ClassDTO]:
-    #     # classrooms = ClassroomDocument.objects(Parish=parish_id).select_related()
-    #     docs = ClassDocument.objects(Schedule__Classroom__Parish=parish_id).select_related(max_depth=2)
-    #     return [self._to_dto(doc, ClassDTO, include) for doc in docs]
-    # mongodb_dal.py -> MÉTODO CORREGIDO
-
-    # def get_classes_by_parish_id(self, parish_id: str, include: list[str] = []) -> List[ClassDTO]:
-    #     try:
-    #         # Paso 1: Obtener todas las aulas que pertenecen a la parroquia.
-    #         classrooms_in_parish = ClassroomDocument.objects(Parish=parish_id)
-            
-    #         if not classrooms_in_parish:
-    #             return []
-
-    #         docs = ClassDocument.objects(Schedule__ClassRoom__in=classrooms_in_parish).select_related(max_depth=3)
-            
-    #         return [self._to_dto(doc, ClassDTO, include) for doc in docs]
-    #     except Exception as e:
-    #         logging.error(f"Error al obtener clases por parish_id '{parish_id}': {e}")
-    #         return []
-    
     def get_classes_by_parish_id(self, parish_id: str, include: list[str] = []) -> List[ClassDTO]:
         """
         Obtiene todas las clases de una parroquia específica basándose en la nueva
@@ -508,9 +565,6 @@ class MongoDBDAL(IDataAccessLayer):
                 return []
 
             # 3. Buscamos todas las clases cuyo campo 'Schedule.ClassRoom' esté en nuestra lista de aulas.
-            # El operador `__in` es perfecto para esto.
-            # Usamos max_depth=2 para precargar eficientemente los datos anidados para los DTOs
-            # (ej. Catechist -> Person, Level, ClassPeriod, etc.)
             docs = ClassDocument.objects(Schedule__Classroom__in=classrooms_in_parish).select_related(max_depth=3)
             
             return [self._to_dto(doc, ClassDTO, include) for doc in docs]
@@ -520,6 +574,18 @@ class MongoDBDAL(IDataAccessLayer):
             return [] # Si no se encuentra la parroquia, no hay clases que devolver.
         except Exception as e:
             logging.error(f"Error al obtener clases por parish_id '{parish_id}': {e}")
+            return []
+    
+    def get_classes_by_catechist_id(self, catechist_id: str, include: list[str] = []) -> List[ClassDTO]:
+        """
+        Obtiene todas las clases asignadas a un catequista específico.
+        """
+        try:
+            # coincide con el ID del catequista proporcionado.
+            docs = ClassDocument.objects(Catechist=catechist_id).select_related(max_depth=3)
+            return [self._to_dto(doc, ClassDTO, include) for doc in docs]
+        except Exception as e:
+            logging.error(f"Error al obtener clases para el catequista {catechist_id}: {e}")
             return []
     
     def get_catechists_by_parish_id(self, parish_id: str, include: list[str] = []) -> List[CatechistDTO]:

@@ -1,4 +1,65 @@
-{% macro render_field(field) %}
+{# templates/_form_helpers.html #}
+
+{# Macro para renderizar un campo de formulario individual con etiquetas, errores y clases de Bootstrap #}
+{% macro render_field(field, class='') %}
+<div class="mb-3">
+    {% if field.type != 'BooleanField' and field.type != 'RadioField' and field.type != 'SubmitField' %}
+        {{ field.label(class="form-label") }}
+    {% endif %}
+    
+    {# Añadir clases de Bootstrap al campo y marcar como inválido si hay errores #}
+    {% if field.type == 'BooleanField' %}
+        <div class="form-check">
+            {{ field(class="form-check-input " + class, **kwargs) }}
+            {{ field.label(class="form-check-label") }}
+        </div>
+    {% elif field.type == 'RadioField' %}
+        <div class="mt-2">
+        {% for subfield in field %}
+        <div class="form-check form-check-inline">
+            {{ subfield(class="form-check-input") }}
+            {{ subfield.label(class="form-check-label") }}
+        </div>
+        {% endfor %}
+        </div>
+    {% elif field.type == 'SubmitField' %}
+        {{ field(class="btn " + class, **kwargs) }}
+    {% else %}
+        {{ field(class="form-control" + (" is-invalid" if field.errors else "") + " " + class, **kwargs) }}
+    {% endif %}
+
+    {# Mostrar errores de validación debajo del campo #}
+    {% if field.errors %}
+        <div class="invalid-feedback d-block">
+            {% for error in field.errors %}
+                <span>{{ error }}</span><br>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>
+{% endmacro %}
+
+
+{# Macro para renderizar una sección completa de un formulario anidado (FormField) #}
+{% macro render_form_section(form_section, title) %}
+<fieldset class="mb-4 border p-3">
+    {% if title %}
+        <legend class="w-auto px-2 h5">{{ title }}</legend>
+    {% endif %}
+    
+    {# Iterar sobre todos los campos dentro del FormField #}
+    {% for field in form_section %}
+        {# Si el campo es otro FormField, llamamos recursivamente a esta macro #}
+        {% if field.type == 'FormField' %}
+            {{ render_form_section(field, field.label.text) }}
+        {% else %}
+            {{ render_field(field) }}
+        {% endif %}
+    {% endfor %}
+</fieldset>
+{% endmacro %}
+
+<!-- {% macro render_field(field) %}
 <div class="mb-3">
   {{ field.label }}
   {{ field(**kwargs)|safe }}
@@ -10,4 +71,4 @@
     </ul>
   {% endif %}
 </div>
-{% endmacro %}
+{% endmacro %} -->

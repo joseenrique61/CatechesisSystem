@@ -3,7 +3,7 @@
 from flask import Blueprint, render_template, flash, redirect, url_for, request, session
 from app import dal
 from app.auth.authentication import login_required
-from app.auth.forms import LoginForm
+from app.main.forms import *
 from app.main.data.dtos.base_dtos import UserDTO, ParishPriestDTO, CatechistDTO, AdministratorDTO
 
 bp = Blueprint('auth', __name__)

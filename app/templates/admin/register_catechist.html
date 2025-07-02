@@ -160,8 +160,8 @@
                              <div class="col-md-7 mb-3"> {# Más ancho para Teléfono + Tipo #}
                                 {{ form.Person.PhoneNumber.PhoneNumber.label(class="form-label") }}
                                 <div class="input-group">
-                                    {# Asumiendo que el form.Person.PhoneNumber.PhoneNumberType.PhoneNumberType es el SelectField #}
-                                    {% set ph_type_field = form.Person.PhoneNumber.PhoneNumberType.PhoneNumberType %}
+                                    {# Asumiendo que el form.Person.PhoneNumber.PhoneNumberType es el SelectField #}
+                                    {% set ph_type_field = form.Person.PhoneNumber.PhoneNumberType %}
                                     {{ ph_type_field(class="form-select" + (" is-invalid" if ph_type_field.errors else ""), style="max-width: 150px;") }}
 
                                     {{ form.Person.PhoneNumber.PhoneNumber(class="form-control" + (" is-invalid" if form.Person.PhoneNumber.PhoneNumber.errors else ""), placeholder="Número") }}

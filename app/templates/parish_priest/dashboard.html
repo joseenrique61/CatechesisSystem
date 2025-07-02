@@ -44,10 +44,10 @@
                             {{ catechizing.Class.Level.Name if catechizing.Class and catechizing.Class.Level else 'N/A' }}
                         </td>
                         <td>
-                            <a href="{{ url_for('parish_priest.update_catechizing', id=catechizing.IDCatechizing) }}" class="btn btn-warning btn-sm" title="Editar">
+                            <a href="{{ url_for('parish_priest.update_catechizing', catechizing_id=catechizing.id) }}" class="btn btn-warning btn-sm" title="Editar">
                                 <i class="fas fa-edit"></i>
                             </a>
-                            <form action="{{ url_for('parish_priest.delete_catechizing', id=catechizing.IDCatechizing) }}" method="POST" style="display:inline;" onsubmit="return confirm('¿Está seguro de que desea eliminar a este catequizando?');">
+                            <form action="{{ url_for('parish_priest.delete_catechizing', catechizing_id=catechizing.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('¿Está seguro de que desea eliminar a este catequizando?');">
                                 <button type="submit" class="btn btn-danger btn-sm" title="Eliminar">
                                     <i class="fas fa-trash"></i>
                                 </button>
@@ -87,12 +87,15 @@
                         <td>
                             {{ p_class.Level.Name if p_class.Level else 'N/A' }}
                         </td>
-                        <td>
+                        <td>                        
                             {% if p_class.Schedule %}
-                                Aula: {{ p_class.Schedule.Classroom.ClassroomName }}. {{ p_class.Schedule.DayOfTheWeek.DayOfTheWeek }}: {{ p_class.Schedule.StartHour }} - {{ p_class.Schedule.EndHour }} <br>
+                            
+                            Aula: {{ p_class.Schedule.Classroom.ClassroomName }}
+                            Horario: {{ p_class.Schedule.StartHour }} - {{ p_class.Schedule.EndHour }} ({{ p_class.Schedule.DayOfTheWeek }}) <br>    
+                        
                             {% else %}
                                 Horario no definido
-                            {% endif %}
+                            {% endif %}            
                         </td>
                         <td>
                             {% if p_class.Catechist and p_class.Catechist.Person %}

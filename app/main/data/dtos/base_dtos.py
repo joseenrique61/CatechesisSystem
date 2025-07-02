@@ -191,7 +191,6 @@ class CatechizingDTO(BaseDTO):
     Parent: List['ParentDTO'] = []
     Godparent: List['GodparentDTO'] = []
     Sacrament: List['SacramentDTO'] = []
-    # CAMBIO: De lista de DTOs embebidos a lista de DTOs referenciados.
     LevelCertificate: List['ClassDTO'] = []
     AttendedClass: List['AttendedClassDTO'] = []
     ParticularClass: List['ParticularClassDTO'] = []

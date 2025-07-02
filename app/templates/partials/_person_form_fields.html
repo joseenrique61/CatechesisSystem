@@ -116,7 +116,7 @@
      <div class="col-md-7 mb-3">
         {{ p_form.PhoneNumber.PhoneNumber.label(class="form-label") }}
         <div class="input-group">
-            {% set ph_type_field = p_form.PhoneNumber.PhoneNumberType.PhoneNumberType %}
+            {% set ph_type_field = p_form.PhoneNumber.PhoneNumberType %}
             {{ ph_type_field(class="form-select " + (size_class if size_class else "form-select-sm") + (" is-invalid" if ph_type_field.errors else ""), style="max-width: 150px;") }}
 
             {{ p_form.PhoneNumber.PhoneNumber(class="form-control " + (size_class if size_class else "form-control-sm") + (" is-invalid" if p_form.PhoneNumber.PhoneNumber.errors else ""), placeholder="Número") }}
