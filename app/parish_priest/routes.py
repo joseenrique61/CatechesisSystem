@@ -222,88 +222,139 @@ def register_catechizing():
 @bp.route('/catechizing/update/<string:catechizing_id>', methods=['GET', 'POST'])
 @login_required('ParishPriest')
 def update_catechizing(catechizing_id):
-    # En la solicitud GET, necesitamos todos los datos anidados para poblar el formulario.
-    # El include es crucial para que `obj=catechizing` funcione correctamente.
-    includes_for_form = [
-        "Person.Address.Location", 
-        "Person.PhoneNumber.PhoneNumberType", 
-        "Class.Level", 
-        "HealthInformation.EmergencyContact"
-    ]
-    
-    catechizing = dal.get_catechizing_by_id(catechizing_id, include=includes_for_form)
-    
+    catechizing = dal.get_catechizing_by_id(catechizing_id, include=["Person.Address.Location", "Person.PhoneNumber.PhoneNumberType", "Class", "School", "HealthInformation", "Sacrament"])
     if not catechizing:
         flash('Catequizando no encontrado.', 'danger')
-        return redirect(url_for('parish_priest.parish_dashboard'))
+        return redirect(url_for('parish_priest.dashboard'))
     
+    # Creamos el formulario. En una petición GET, lo poblamos con el objeto 'catechizing'.
     form = CatechizingUpdateForm(obj=catechizing)
     
+    contact_choices = []
+    # Usamos los datos del objeto `catechizing` original para construir las opciones
+    for i, p in enumerate(catechizing.Parent):
+        if p.Person: # Verificación de seguridad
+            label = f"{p.Person.FirstName} {p.Person.FirstSurname} (Padre/Tutor)".strip()
+            value = f"parent-{i}"
+            contact_choices.append((value, label))
+    for i, g in enumerate(catechizing.Godparent):
+        if g.Person:
+            label = f"{g.Person.FirstName} {g.Person.FirstSurname} (Padrino/Madrina)".strip()
+            value = f"godparent-{i}"
+            contact_choices.append((value, label))
+    
+    form.HealthInformation.EmergencyContact.choices = [('', '--- Seleccione ---')] + contact_choices
+    
+    # 2. Pre-seleccionar el valor actual SOLO en peticiones GET
+    if request.method == 'GET':
+        # Poblamos los sacramentos
+        form.Sacrament.data = [s.id for s in catechizing.Sacrament]
+        
+        # Poblamos el contacto de emergencia
+        if catechizing.HealthInformation and catechizing.HealthInformation.EmergencyContact:
+            current_contact_id = catechizing.HealthInformation.EmergencyContact.id
+            
+            # Buscamos si el ID del contacto actual coincide con alguna de las personas en la lista
+            found_value = None
+            for i, p in enumerate(catechizing.Parent):
+                if p.Person and p.Person.id == current_contact_id:
+                    found_value = f"parent-{i}"
+                    break
+            if not found_value:
+                for i, g in enumerate(catechizing.Godparent):
+                    if g.Person and g.Person.id == current_contact_id:
+                        found_value = f"godparent-{i}"
+                        break
+            
+            # Si lo encontramos, establecemos el valor por defecto del campo
+            if found_value:
+                form.HealthInformation.EmergencyContact.data = found_value
+    
+    # Lógica para pre-poblar los campos dinámicos
+    if request.method == 'POST':
+        # ... (la misma lógica de pre-poblado de alergias/contactos que en 'create') ...
+        pass
+    else: # Petición GET
+        # Poblamos los sacramentos que ya tiene el catequizando
+        form.Sacrament.data = [s.id for s in catechizing.Sacrament]
+
     if form.validate_on_submit():
         try:
-            # --- 1. Construir el DTO de Persona actualizado ---
+            # 1. Construir el DTO de Persona actualizado
             person_update_form = form.Person
             loc_dto = LocationDTO(**person_update_form.Address.Location.data)
             addr_dto = AddressDTO(**person_update_form.Address.data, Location=loc_dto)
+            phone_type_dto = dal.get_phone_number_type_by_id(person_update_form.PhoneNumber.PhoneNumberType.data)
+            phone_dto = PhoneNumberDTO(**person_update_form.PhoneNumber.data, PhoneNumberType=phone_type_dto)
             
-            # El PhoneNumberType solo se actualiza si se envía un ID válido.
-            phone_type_id = getattr(person_update_form.PhoneNumber.PhoneNumberType, 'data', None)
-            phone_type_dto = dal.get_phone_number_type_by_id(phone_type_id) if phone_type_id else None
-            
-            phone_dto = PhoneNumberDTO(
-                **person_update_form.PhoneNumber.data, 
-                PhoneNumberType=phone_type_dto
-            )
-
+            # Solo actualizamos los campos editables de la persona
             person_dto = PersonDTO(
-                Address=addr_dto, 
-                PhoneNumber=phone_dto, 
-                EmailAddress=person_update_form.EmailAddress.data
+                EmailAddress=person_update_form.EmailAddress.data,
+                Address=addr_dto,
+                PhoneNumber=phone_dto,
+                # Pasamos los datos no editables desde el objeto original para mantener la consistencia
+                FirstName=catechizing.Person.FirstName,
+                FirstSurname=catechizing.Person.FirstSurname,
+                DNI=catechizing.Person.DNI
             )
 
-            # --- 2. Construir DTO de Información de Salud actualizado ---
-            health_update_form = form.HealthInformation
-            emergency_contact_dto = None
-            if health_update_form.RegisterNewContact.data:
-                # Si se registra un nuevo contacto...
-                # 1. Construir un DTO de persona con los datos del subformulario.
-                new_contact_person_dto = build_person_dto_from_form(health_update_form.NewEmergencyContact)
-                emergency_contact_person_doc = dal._get_or_create_person(new_contact_person_dto)
-                emergency_contact_dto = new_contact_person_dto
+            # 2. Lógica de Health Information (similar a la de 'create')
+            health_info_form = form.HealthInformation
+            emergency_contact_dto = None  # Empezamos con el DTO vacío
 
-            elif health_update_form.EmergencyContact.data:
-                # Si se seleccionó uno existente, obtener su documento.
-                emergency_contact_person_doc = PersonDocument.objects.with_id(health_update_form.EmergencyContact.data)
-                emergency_contact_dto = dal._get_or_create_person(emergency_contact_person_doc)
+            if health_info_form.RegisterNewContact.data:
+                # Si se registra un nuevo contacto, simplemente construimos su DTO.        
+                emergency_contact_dto = build_person_dto_from_form(health_info_form.NewEmergencyContact)
             
+            elif health_info_form.EmergencyContact.data:
+                # Si se selecciona de la lista, obtenemos sus datos del formulario.
+                contact_value = health_info_form.EmergencyContact.data
+                try:
+                    person_type, index_str = contact_value.split('-')
+                    index = int(index_str)
+                    source_person_form = None
+                    if person_type == 'parent':
+                        source_person_form = form.Parent.entries[index].Person
+                    elif person_type == 'godparent':
+                        source_person_form = form.Godparent.entries[index].Person
+                    
+                    if source_person_form:
+                        # Construimos el DTO a partir de los datos del formulario.
+                        emergency_contact_dto = build_person_dto_from_form(source_person_form)
+                except (ValueError, IndexError):
+                    flash(f"Valor de contacto de emergencia inválido: {contact_value}", "warning")
+            
+            # Ahora, creamos el HealthInformationDTO, pasándole el DTO completo de la persona.
             health_dto = HealthInformationDTO(
-                ImportantAspects=health_update_form.ImportantAspects.data,
-                Allergy=health_update_form.Allergy.data,
-                EmergencyContact=emergency_contact_dto,
-                # Pasamos el BloodType desde el campo oculto del formulario original.
-                BloodType=catechizing.HealthInformation.BloodType 
+                ImportantAspects=health_info_form.ImportantAspects.data,
+                BloodType=health_info_form.BloodType.data,
+                Allergy=health_info_form.Allergy.data,
+                EmergencyContact=emergency_contact_dto # Pasamos el PersonDTO completo
             )
 
-            # --- 3. Construir DTOs simples y de referencia actualizados ---
+            # 3. Construir DTOs de referencia
             school_dto = SchoolDTO(**form.School.data)
             class_dto = ClassDTO(id=form.Class.data)
+            all_sacraments_in_db = {str(s.id): s for s in dal.get_all_sacraments()}
+            sacraments_dto_list = [all_sacraments_in_db[sac_id] for sac_id in form.Sacrament.data if sac_id in all_sacraments_in_db]
 
-            # --- 4. Ensamblar el DTO principal de actualización ---
-            # Campos no editables como SiblingsNumber no se incluyen en el DTO de actualización.
-            # La DAL se encargará de no modificarlos.
-            updated_catechizing_dto = CatechizingDTO(
+            # 4. Ensamblar DTO de actualización
+            updated_dto = CatechizingDTO(
                 Person=person_dto,
                 PayedLevelCourse=form.PayedLevelCourse.data,
                 DataSheetInformation=form.DataSheetInformation.data,
                 School=school_dto,
                 Class=class_dto,
                 HealthInformation=health_dto,
+                Sacrament=sacraments_dto_list,
+                IsLegitimate=catechizing.IsLegitimate,
+                SiblingsNumber=catechizing.SiblingsNumber,
+                ChildNumber=catechizing.ChildNumber
             )
 
-            # --- 5. Llamar a la DAL para actualizar ---
-            dal.update_catechizing(catechizing_id, updated_catechizing_dto)
+            dal.update_catechizing(catechizing_id, updated_dto)
             flash('Información del catequizando actualizada con éxito.', 'success')
-            return redirect(url_for('parish_priest.view_catechizing', catechizing_id=catechizing_id)) # Asumiendo una ruta para ver detalles
+            return redirect(url_for('parish_priest.dashboard'))
         
         except Exception as e:
             flash(f'Error al actualizar la información: {e}', 'danger')
@@ -326,25 +377,35 @@ def delete_catechizing(catechizing_id):
 @bp.route('/class/create', methods=['GET', 'POST'])
 @login_required("ParishPriest")
 def register_class():
-    form = ClassForm()
+    priest_dto = dal.get_parish_priest_by_id(session["id"])
+    
+    if not priest_dto or not priest_dto.Parish:
+        flash("No se pudo cargar la información del párroco o su parroquia.", "danger")
+        return redirect(url_for('main.index'))
+    
+    current_parish_id = priest_dto.Parish.id
+       
+    form = ClassForm(current_parish_id)
     if form.validate_on_submit():
         try:
-            # Construir DTOs para las referencias
-            period_dto = ClassPeriodDTO(id=form.ClassPeriod.data)
-            level_dto = LevelDTO(id=form.Level.data)
-            catechist_dto = CatechistDTO(id=form.Catechist.data)
-            support_person_dto = SupportPersonDTO(id=form.SupportPerson.data) if form.SupportPerson.data else None
+            # 1. Construir DTOs para las referencias a partir de los IDs del formulario
+            period_dto = dal.get_class_period_by_id(form.ClassPeriod.data)
+            level_dto = dal.get_level_by_id(form.Level.data)
+            catechist_dto = dal.get_catechist_by_id(form.Catechist.data)
+            support_person_dto = dal.get_support_person_by_id(form.SupportPerson.data) if form.SupportPerson.data else None
             
-            # Construir DTO anidado para el horario
-            classroom_dto = ClassroomDTO(id=form.Schedule.Classroom.data)
+            # --- 2. CONSTRUIR EL SCHEDULEDTO DE FORMA EXPLÍCITA ---
+            schedule_form = form.Schedule # Alias para el subformulario
+            classroom_dto = dal.get_classroom_by_id(schedule_form.Classroom.data)
+
             schedule_dto = ScheduleDTO(
-                **form.Schedule.data,
-                StartHour=form.Schedule.StartHour.data.strftime('%H:%M'), # Convertir Time a string
-                EndHour=form.Schedule.EndHour.data.strftime('%H:%M'),   # Convertir Time a string
+                DayOfTheWeek=schedule_form.DayOfTheWeek.data,
+                StartHour=schedule_form.StartHour.data.strftime('%H:%M'),
+                EndHour=schedule_form.EndHour.data.strftime('%H:%M'),
                 Classroom=classroom_dto
             )
 
-            # Construir el DTO principal de la clase
+            # --- 3. CONSTRUIR EL CLASSDTO PRINCIPAL ---
             class_dto = ClassDTO(
                 ClassPeriod=period_dto,
                 Level=level_dto,
@@ -352,10 +413,12 @@ def register_class():
                 SupportPerson=support_person_dto,
                 Schedule=schedule_dto
             )
-
+            
+            # --- 4. LLAMAR A LA DAL ---
             dal.register_class(class_dto)
             flash('Clase registrada con éxito.', 'success')
             return redirect(url_for('parish_priest.dashboard'))
+            
         except Exception as e:
             flash(f'Error al registrar la clase: {e}', 'danger')
 
@@ -367,36 +430,23 @@ def register_support_person():
     form = SupportPersonForm()
     if form.validate_on_submit():
         try:
-            # Obtener la parroquia del párroco en sesión
+            # 1. Obtener la parroquia del párroco en sesión
             priest_dto = dal.get_dto_by_user(session.get('username'))
             if not priest_dto or not priest_dto.Parish:
                 flash('Error: No se pudo determinar tu parroquia.', 'danger')
                 return redirect(url_for('parish_priest.dashboard'))
 
-            # Construir DTOs... (similar a los otros registros de persona)
-            loc_dto = LocationDTO(**form.Person.Address.Location.data)
-            addr_dto = AddressDTO(**form.Person.Address.data, Location=loc_dto)
-            phone_type_dto = dal.get_phone_number_type_by_id(form.Person.PhoneNumber.PhoneNumberType.data)
-            phone_dto = PhoneNumberDTO(**form.Person.PhoneNumber.data, PhoneNumberType=phone_type_dto)
-            person_dto = PersonDTO(**form.Person.data, Address=addr_dto, PhoneNumber=phone_dto)
+            # 2. Construir el DTO de la persona usando el helper
+            person_dto = build_person_dto_from_form(form.Person)
             
+            # 3. Construir el DTO de SupportPerson
             support_person_dto = SupportPersonDTO(Person=person_dto, Parish=priest_dto.Parish)
             
             dal.register_support_person(support_person_dto)
             flash('Persona de soporte registrada con éxito.', 'success')
             return redirect(url_for('parish_priest.dashboard'))
+            
         except Exception as e:
             flash(f'Error al registrar persona de soporte: {e}', 'danger')
 
     return render_template('parish_priest/register_support_person.html', title='Registrar Persona de Soporte', form=form)
-
-
-
-            # health_info_form = form.HealthInformation
-            # emergency_contact_dto = None
-            # if health_info_form.RegisterNewContact.data:
-            #     # Si se registra un nuevo contacto, construirlo desde el subformulario.
-            #     emergency_contact_dto = build_person_dto_from_form(health_info_form.NewEmergencyContact)
-            # elif health_info_form.EmergencyContact.data:
-            #     # Si se seleccionó uno existente, crear un DTO solo con el ID.
-            #     emergency_contact_dto = PersonDTO(id=health_info_form.EmergencyContact.data)

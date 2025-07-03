@@ -461,6 +461,10 @@ class MongoDBDAL(IDataAccessLayer):
     def get_level_by_name(self, level_name: str) -> Optional[LevelDTO]:
         doc = LevelDocument.objects(Name=level_name).first()
         return self._to_dto(doc, LevelDTO)
+    
+    def get_level_by_id(self, level_id: str) -> Optional[LevelDTO]:
+        doc = LevelDocument.objects(id=level_id).first()
+        return self._to_dto(doc, LevelDTO)
 
     def get_class_by_id(self, class_id: str) -> Optional[ClassDTO]:
         doc = ClassDocument.objects(id=class_id).select_related().first()
@@ -511,6 +515,10 @@ class MongoDBDAL(IDataAccessLayer):
 
     def get_all_support_persons(self, include: list[str] = []) -> List[SupportPersonDTO]:
         return [self._to_dto(doc, SupportPersonDTO, include) for doc in SupportPersonDocument.objects.all()]
+    
+    def get_support_person_by_id(self, class_id:str) -> Optional[SupportPersonDTO]:
+        doc = LevelDocument.objects(id=class_id).first()
+        return self._to_dto(doc, SupportPersonDTO)
 
     def get_classrooms_by_parish(self, parish_id: str) -> List[ClassroomDTO]:
         """
@@ -541,6 +549,10 @@ class MongoDBDAL(IDataAccessLayer):
     def get_class_period_by_id(self, period_id: str) -> Optional[ClassPeriodDTO]:
         doc = ClassPeriodDocument.objects(id=period_id).first()
         return self._to_dto(doc, ClassPeriodDTO)
+    
+    def get_classroom_by_id(self, classroom_id: str) -> Optional[ClassroomDTO]:
+        doc = ClassroomDocument.objects(id=classroom_id).first()
+        return self._to_dto(doc, ClassroomDTO)
 
     def register_support_person(self, support_person_data: SupportPersonDTO) -> SupportPersonDTO:
         person_doc = self._get_or_create_person(support_person_data.Person)

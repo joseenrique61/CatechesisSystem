@@ -152,22 +152,27 @@ class HealthInformationForm(Form):
 
 class ScheduleForm(Form):
     """
-    Formulario para registrar 
+    Formulario para registrar el horario de una clase.
     """
     DayOfTheWeek = SelectField('Día de la semana', [validators.DataRequired()], choices=[])
     StartHour = TimeField('Hora de inicio', [validators.DataRequired()], format='%H:%M')
     EndHour = TimeField('Hora de fin', [validators.DataRequired()], format='%H:%M')
     Classroom = SelectField('Aula', [validators.DataRequired()], coerce=str)
 
-    def __init__(self, parish_id, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         from app import dal # Importación local
         super(ScheduleForm, self).__init__(*args, **kwargs)
         
-        days = dal.get_all_day_of_the_week()
-        classrooms = dal.get_classrooms_by_parish(parish_id)
+        priest_dto = dal.get_parish_priest_by_id(session["id"])
+        if priest_dto and priest_dto.Parish:    
 
-        self.DayOfTheWeek.choices = [('', '---')] + [(day.DayOfTheWeek, day.DayOfTheWeek) for day in days]
-        self.Classroom.choices = [('', '---')] + [(cr.id, cr.ClassroomName) for cr in classrooms]
+            parish_id = priest_dto.Parish.id
+            days = dal.get_all_day_of_the_week()
+            classrooms = dal.get_classrooms_by_parish(parish_id)
+
+            self.DayOfTheWeek.choices = [('', '---')] + [(day.Day, day.Day) for day in days]
+            self.Classroom.choices = [('', '---')] + [(cr.id, cr.ClassroomName) for cr in classrooms]
+
 
 class CatechizingForm(FlaskForm):
     # 1. Información Personal
@@ -222,6 +227,9 @@ class CatechizingForm(FlaskForm):
             self.Sacrament.choices = [(s.id, s.Name) for s in sacraments]
 
 class ClassForm(FlaskForm):
+    """
+    Formulario principal para registrar una clase.
+    """
     ClassPeriod = SelectField('Periodo de Clases', [validators.DataRequired()], coerce=str)
     Level = SelectField('Nivel de Catecismo', [validators.DataRequired()], coerce=str)
     Catechist = SelectField('Catequista Encargado', [validators.DataRequired()], coerce=str)
@@ -229,70 +237,26 @@ class ClassForm(FlaskForm):
     Schedule = FormField(ScheduleForm, label='Horario y Aula')
     Submit = SubmitField('Registrar Clase')
 
-    def __init__(self, *args, **kwargs):
-        # 1. Llamar al constructor padre PRIMERO.
-        # Esto crea una instancia por defecto de ScheduleForm (que causa el error si no lo corregimos después).
+    def __init__(self, parish_id, *args, **kwargs):
         super(ClassForm, self).__init__(*args, **kwargs)
 
-        # 2. Obtener el parish_id del usuario en sesión.
-        # Este es el dato que necesitamos pasar al sub-formulario.
-        priest_dto = dal.get_dto_by_user(session.get("username"))
-        parish_id = None
-        if priest_dto and hasattr(priest_dto, 'Parish') and priest_dto.Parish:
-            parish_id = priest_dto.Parish.id
+        # Si no nos pasan un parish_id, no podemos continuar.
+        if not parish_id:
+            return
+                
+        # self.Schedule.form = ScheduleForm(parish_id=parish_id, **kwargs)
         
-        # 3. VERIFICACIÓN CRÍTICA: Solo proceder si tenemos un parish_id.
-        if parish_id:
-            # 4. SOBRESCRIBIR EL SUB-FORMULARIO POR DEFECTO.
-            # Creamos una NUEVA instancia de ScheduleForm, esta vez pasándole el parish_id.
-            # El `kwargs.get('Schedule')` es importante para que, si el formulario se está enviando (POST),
-            # los datos ya ingresados por el usuario no se pierdan.
-            self.Schedule.form = ScheduleForm(parish_id=parish_id, **(kwargs.get('Schedule') or {}))
+        # 2. Poblamos los selects del formulario principal.
+        periods = dal.get_all_periods()
+        levels = dal.get_all_levels()
+        catechists = dal.get_catechists_by_parish_id(parish_id, include=["Person"])
+        support_persons = dal.get_support_persons_by_parish_id(parish_id, include=["Person"])
+
+        self.ClassPeriod.choices = [('', '---')] + [(p.id, str(p)) for p in periods]
+        self.Level.choices = [('', '---')] + [(lvl.id, lvl.Name) for lvl in levels]
+        self.Catechist.choices = [('', '---')] + [(c.id, f"{c.Person.FirstName} {c.Person.FirstSurname}") for c in catechists]
+        self.SupportPerson.choices = [('', '---'), ('', 'No Asignado')] + [(sp.id, f"{sp.Person.FirstName} {sp.Person.FirstSurname}") for sp in support_persons]
             
-            # 5. Poblar los selects del formulario principal (ClassForm).
-            periods = dal.get_all_periods()
-            levels = dal.get_all_levels()
-            catechists = dal.get_catechists_by_parish_id(parish_id, include=["Person"])
-            support_persons = dal.get_support_persons_by_parish_id(parish_id, include=["Person"])
-
-            self.ClassPeriod.choices = [('', '---')] + [(p.id, str(p)) for p in periods]
-            self.Level.choices = [('', '---')] + [(lvl.id, lvl.Name) for lvl in levels]
-            self.Catechist.choices = [('', '---')] + [(c.id, f"{c.Person.FirstName} {c.Person.FirstSurname}") for c in catechists]
-            self.SupportPerson.choices = [('', '---'), ('', 'No Asignado')] + [(sp.id, f"{sp.Person.FirstName} {sp.Person.FirstSurname}") for sp in support_persons]
-
-            # Opcional: Si no hay parroquia, puedes deshabilitar campos o mostrar un mensaje.
-            # logging.warning("No se pudo determinar la parroquia para el usuario en sesión. El formulario de clase puede no funcionar.")
-
-# class ClassForm(FlaskForm):
-#     ClassPeriod = SelectField('Periodo de Clases', [validators.DataRequired()], coerce=str)
-#     Level = SelectField('Nivel de Catecismo', [validators.DataRequired()], coerce=str)
-#     Catechist = SelectField('Catequista Encargado', [validators.DataRequired()], coerce=str)
-#     SupportPerson = SelectField('Persona de Soporte', [validators.Optional()], coerce=str)
-#     Schedule = FormField(ScheduleForm, label='Horario y Aula')
-#     Submit = SubmitField('Registrar Clase')
-
-#     def __init__(self, *args, **kwargs):
-#         super(ClassForm, self).__init__(*args, **kwargs)
-#         priest_dto = dal.get_dto_by_user(session.get("username"))
-#         parish_id = None
-#         if priest_dto and hasattr(priest_dto, 'Parish') and priest_dto.Parish:
-#             parish_id = priest_dto.Parish.id
-
-#         if parish_id:
-#             # Poblar los selects
-#             periods = dal.get_all_periods()
-#             levels = dal.get_all_levels()
-#             catechists = dal.get_catechists_by_parish_id(parish_id, include=["Person"])
-#             support_persons = dal.get_support_persons_by_parish_id(parish_id, include=["Person"])
-
-#             self.ClassPeriod.choices = [('', '---')] + [(p.id, str(p)) for p in periods]
-#             self.Level.choices = [('', '---')] + [(lvl.id, lvl.Name) for lvl in levels]
-#             self.Catechist.choices = [('', '---')] + [(c.id, f"{c.Person.FirstName} {c.Person.FirstSurname}") for c in catechists]
-#             self.SupportPerson.choices = [('', '---'), (None, 'No Asignado')] + [(sp.id, f"{sp.Person.FirstName} {sp.Person.FirstSurname}") for sp in support_persons]
-            
-#             # Pasar el parish_id al subformulario de horario
-#             self.Schedule.form = ScheduleForm(parish_id=parish_id, **(kwargs.get('Schedule') or {}))
-
 class CatechistForm(FlaskForm):
     User = FormField(UserForm, label='Datos de usuario')
     Person = FormField(PersonForm, label='Datos del catequista')
@@ -314,7 +278,7 @@ class SupportPersonForm(FlaskForm):
 class HealthInformationUpdateForm(Form):
     ImportantAspects = TextAreaField('Aspectos Importantes de Salud', validators=[Optional()])
     Allergy = FieldList(StringField('Alergia', [validators.Length(max=100)]), 'Alergias', min_entries=0)
-    BloodType = HiddenField(SelectField('Tipo de Sangre', validators=[DataRequired()], choices=[]))
+    BloodType = HiddenField()
 
     EmergencyContact = SelectField('Contacto de Emergencia', [validators.Optional()], coerce=str)
     RegisterNewContact = BooleanField('Registrar un nuevo contacto de emergencia', default=False)
@@ -322,7 +286,7 @@ class HealthInformationUpdateForm(Form):
 
     def __init__(self, *args, **kwargs):
         super(HealthInformationUpdateForm, self).__init__(*args, **kwargs)
-        self.BloodType.choices = [(item.Type, item.Type) for item in dal.get_all_blood_types()]
+        # self.BloodType.choices = [(item.Type, item.Type) for item in dal.get_all_blood_types()]
         self.EmergencyContact.choices = [('', '--- Seleccione de la lista o registre uno nuevo ---')]
 
 class CatechizingUpdateForm(FlaskForm):
@@ -356,14 +320,14 @@ class CatechizingUpdateForm(FlaskForm):
     Submit = SubmitField('Actualizar Catequizando')
     
     def __init__(self, *args, **kwargs):
-            super(CatechizingUpdateForm, self).__init__(*args, **kwargs)
+        super(CatechizingUpdateForm, self).__init__(*args, **kwargs)
 
-            priest_dto = dal.get_parish_priest_by_id(session["id"])
-            if priest_dto and priest_dto.Parish:
-                classes = dal.get_classes_by_parish_id(priest_dto.Parish.id)
-                self.Class.choices = [(c.id, f"{c.Level.Name}: {c.Schedule.DayOfTheWeek if c.Schedule else '' } ( {c.Schedule.StartHour} - {c.Schedule.EndHour} ) ") for c in classes]
-                sacraments = dal.get_all_sacraments()
-                self.Sacrament.choices = [(s.id, s.Name) for s in sacraments]
+        priest_dto = dal.get_parish_priest_by_id(session["id"])
+        if priest_dto and priest_dto.Parish:
+            classes = dal.get_classes_by_parish_id(priest_dto.Parish.id)
+            self.Class.choices = [(c.id, f"{c.Level.Name}: {c.Schedule.DayOfTheWeek if c.Schedule else '' } ( {c.Schedule.StartHour} - {c.Schedule.EndHour} ) ") for c in classes]
+            sacraments = dal.get_all_sacraments()
+            self.Sacrament.choices = [(s.id, s.Name) for s in sacraments]
 
 
 class ParishPriestForm(FlaskForm):

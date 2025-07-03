@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{# Importamos nuestras macros para poder usarlas #}
+{# Importamos nuestras macros para poder renderizar los campos de forma limpia #}
 {% from "_form_helpers.html" import render_field, render_form_section %}
 
 {% block title %}{{ title if title else "Registrar Nueva Clase" }}{% endblock %}
@@ -9,16 +9,17 @@
     <div class="col-md-10 col-lg-8">
         <div class="card shadow">
             <div class="card-header">
-                <h3 class="card-title">{{ title if title else "Registrar Nueva Clase" }}</h3>
+                <h3 class="card-title">{{ title }}</h3>
             </div>
             <div class="card-body">
                 <form method="POST" novalidate>
-                    {{ form.hidden_tag() }}
+                    {{ form.hidden_tag() }} {# Token CSRF #}
 
                     {# --- 1. Detalles Generales de la Clase --- #}
                     <fieldset class="mb-4 border p-3">
                         <legend class="w-auto px-2 h5">1. Detalles Generales</legend>
                         <div class="row">
+                            {# Usamos la macro para renderizar cada campo. Ocuparán 50% del ancho en pantallas medianas o más grandes. #}
                             <div class="col-md-6">{{ render_field(form.ClassPeriod) }}</div>
                             <div class="col-md-6">{{ render_field(form.Level) }}</div>
                         </div>
@@ -34,8 +35,8 @@
                     </fieldset>
 
                     {# --- 3. Horario y Aula --- #}
-                    {# Aquí es donde la macro brilla. Renderiza el FormField 'Schedule' completo. #}
-                    {# La macro se encargará de los campos DayOfTheWeek, StartHour, EndHour y Classroom dentro de ScheduleForm #}
+                    {# Aquí la macro render_form_section se encarga de todo el subformulario 'Schedule' #}
+                    {# Automáticamente renderizará DayOfTheWeek, StartHour, EndHour, y Classroom #}
                     {{ render_form_section(form.Schedule, '3. Horario y Aula') }}
                     
                     {# --- Botón de Envío --- #}
@@ -49,3 +50,5 @@
     </div>
 </div>
 {% endblock %}
+
+{# No se necesita el bloque 'scripts_extra' porque este formulario no tiene lógica dinámica de frontend. #}
