@@ -27,6 +27,7 @@ def dashboard():
         include=["SupportPerson.Person","Catechist.Person","Level","ClassPeriod","Schedule.Classroom"]
     )
 
+    all_support_person = dal.get_all_support_persons()
     all_sacraments = dal.get_all_sacraments();
     
     support_persons_with_levels = {}
@@ -46,6 +47,17 @@ def dashboard():
             # Añadimos el nombre del nivel de la clase actual a la lista de la persona
             if p_class.Level and p_class.Level.Name:
                 support_persons_with_levels[support_person_id]['levels'].append(p_class.Level.Name)
+        else:
+            for support_person in all_support_person:
+                support_person_id = support_person.id
+                
+                if support_person_id not in support_persons_with_levels:
+                    support_persons_with_levels[support_person_id] = {
+                        'person_data': support_person, # El DTO completo de SupportPerson
+                        'levels': []
+                    }
+                    
+                    support_persons_with_levels[support_person_id]['levels'].append("No tiene clases asignadas")
 
     # ... (el resto de tus llamadas a la DAL para catechizings, catechists, etc.) ...
     catechizings = dal.get_catechizings_by_parish(
