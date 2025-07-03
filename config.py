@@ -36,7 +36,7 @@ class Config:
     
     else:
         # MongoDB_SERVER=os.environ.get('MongoDB_SERVER')
-        # MongoDB_DATABASE=os.environ.get('MongoDB_DATABASE', 'ParishDatabase')
+        MongoDB_DATABASE=os.environ.get('MongoDB_DATABASE', 'ParishDatabase')
         # MongoDB_USERNAME=os.environ.get('MongoDB_USERNAME')
         # MongoDB_PASSWORD=os.environ.get('MongoDB_PASSWORD')
 
@@ -52,7 +52,7 @@ class Config:
 
         MONGODB_SETTINGS = {
             "host": MONGO_URI,  # MongoEngine espera "host" con URI completa
-            "db": "ParishDatabase"
+            "db": MongoDB_DATABASE
         }
 
     UPLOAD_FOLDER = os.path.join(basedir, "app", 'static', 'uploads')
