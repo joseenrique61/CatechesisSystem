@@ -238,81 +238,49 @@ def register_catechizing():
 @bp.route('/catechizing/update/<string:catechizing_id>', methods=['GET', 'POST'])
 @login_required('ParishPriest')
 def update_catechizing(catechizing_id):
-    catechizing = dal.get_catechizing_by_id(catechizing_id, include=["Person.Address.Location", "Person.PhoneNumber.PhoneNumberType", "Class", "School", "HealthInformation", "Sacrament"])
+    # Obtenemos el catequizando con todos sus datos anidados
+    catechizing = dal.get_catechizing_by_id(catechizing_id, include=[
+        "Person.Address.Location", "Person.PhoneNumber.PhoneNumberType", 
+        "Class.Level", "School", "HealthInformation.EmergencyContact", "Sacrament",
+        "Parent.Person", "Godparent.Person"
+    ])
     if not catechizing:
         flash('Catequizando no encontrado.', 'danger')
         return redirect(url_for('parish_priest.dashboard'))
     
-    # Creamos el formulario. En una petición GET, lo poblamos con el objeto 'catechizing'.
+    # Creamos el formulario. En GET, WTForms lo poblará con `obj=catechizing`.
+    # Gracias al PersonUpdateForm corregido, TODOS los campos se poblarán.
     form = CatechizingUpdateForm(obj=catechizing)
     
-    contact_choices = []
-    # Usamos los datos del objeto `catechizing` original para construir las opciones
-    for i, p in enumerate(catechizing.Parent):
-        if p.Person: # Verificación de seguridad
-            label = f"{p.Person.FirstName} {p.Person.FirstSurname} (Padre/Tutor)".strip()
-            value = f"parent-{i}"
-            contact_choices.append((value, label))
-    for i, g in enumerate(catechizing.Godparent):
-        if g.Person:
-            label = f"{g.Person.FirstName} {g.Person.FirstSurname} (Padrino/Madrina)".strip()
-            value = f"godparent-{i}"
-            contact_choices.append((value, label))
-    
-    form.HealthInformation.EmergencyContact.choices = [('', '--- Seleccione ---')] + contact_choices
-    
-    # 2. Pre-seleccionar el valor actual SOLO en peticiones GET
+    # --- LÓGICA DE PRE-PROCESAMIENTO PARA CAMPOS DINÁMICOS ---
     if request.method == 'GET':
-        # Poblamos los sacramentos
+        # Pre-poblar sacramentos
         form.Sacrament.data = [s.id for s in catechizing.Sacrament]
         
-        # Poblamos el contacto de emergencia
+        # Pre-poblar y pre-seleccionar contacto de emergencia
+        contact_choices = []
+        for i, p in enumerate(catechizing.Parent):
+            if p.Person: contact_choices.append((f"parent-{i}", f"{p.Person.FirstName} {p.Person.FirstSurname} (Padre/Tutor)"))
+        for i, g in enumerate(catechizing.Godparent):
+            if g.Person: contact_choices.append((f"godparent-{i}", f"{g.Person.FirstName} {g.Person.FirstSurname} (Padrino/Madrina)"))
+        form.HealthInformation.EmergencyContact.choices = [('', '--- Seleccione ---')] + contact_choices
+        
         if catechizing.HealthInformation and catechizing.HealthInformation.EmergencyContact:
             current_contact_id = catechizing.HealthInformation.EmergencyContact.id
-            
-            # Buscamos si el ID del contacto actual coincide con alguna de las personas en la lista
             found_value = None
             for i, p in enumerate(catechizing.Parent):
-                if p.Person and p.Person.id == current_contact_id:
-                    found_value = f"parent-{i}"
-                    break
+                if p.Person and p.Person.id == current_contact_id: found_value = f"parent-{i}"; break
             if not found_value:
                 for i, g in enumerate(catechizing.Godparent):
-                    if g.Person and g.Person.id == current_contact_id:
-                        found_value = f"godparent-{i}"
-                        break
-            
-            # Si lo encontramos, establecemos el valor por defecto del campo
-            if found_value:
-                form.HealthInformation.EmergencyContact.data = found_value
-    
-    # Lógica para pre-poblar los campos dinámicos
-    if request.method == 'POST':
-        # ... (la misma lógica de pre-poblado de alergias/contactos que en 'create') ...
-        pass
-    else: # Petición GET
-        # Poblamos los sacramentos que ya tiene el catequizando
-        form.Sacrament.data = [s.id for s in catechizing.Sacrament]
+                    if g.Person and g.Person.id == current_contact_id: found_value = f"godparent-{i}"; break
+            if found_value: form.HealthInformation.EmergencyContact.data = found_value
 
     if form.validate_on_submit():
         try:
-            # 1. Construir el DTO de Persona actualizado
-            person_update_form = form.Person
-            loc_dto = LocationDTO(**person_update_form.Address.Location.data)
-            addr_dto = AddressDTO(**person_update_form.Address.data, Location=loc_dto)
-            phone_type_dto = dal.get_phone_number_type_by_id(person_update_form.PhoneNumber.PhoneNumberType.data)
-            phone_dto = PhoneNumberDTO(**person_update_form.PhoneNumber.data, PhoneNumberType=phone_type_dto)
+            # --- ¡LÓGICA DE CONSTRUCCIÓN DE DTO SIMPLIFICADA! ---
             
-            # Solo actualizamos los campos editables de la persona
-            person_dto = PersonDTO(
-                EmailAddress=person_update_form.EmailAddress.data,
-                Address=addr_dto,
-                PhoneNumber=phone_dto,
-                # Pasamos los datos no editables desde el objeto original para mantener la consistencia
-                FirstName=catechizing.Person.FirstName,
-                FirstSurname=catechizing.Person.FirstSurname,
-                DNI=catechizing.Person.DNI
-            )
+            # 1. Usamos el helper directamente sobre form.Person, que ahora tiene todos los datos.
+            person_dto = build_person_dto_from_form(form.Person)
 
             # 2. Lógica de Health Information (similar a la de 'create')
             health_info_form = form.HealthInformation

@@ -22,5 +22,5 @@ def dashboard():
         case "Admin":
             return redirect(url_for("admin.dashboard"))
         case "Catechist":
-            return redirect(url_for("catechist.dashboard"))
+            return redirect(url_for("catechist.catechist_dashboard"))
             
