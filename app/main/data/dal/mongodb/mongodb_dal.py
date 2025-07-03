@@ -320,6 +320,10 @@ class MongoDBDAL(IDataAccessLayer):
         docs = CatechizingDocument.objects(Class=class_id).select_related()
         return [self._to_dto(doc, CatechizingDTO) for doc in docs]
 
+    def get_sacrament_by_id(self, sacrament_id:str) -> Optional[SacramentDTO]:
+        doc = SacramentDocument.objects(id=sacrament_id).first()
+        return self._to_dto(doc, SacramentDTO)
+
     def get_all_sacraments(self) -> List[SacramentDTO]:
         return [self._to_dto(doc, SacramentDTO) for doc in SacramentDocument.objects.all()]
 
@@ -556,7 +560,20 @@ class MongoDBDAL(IDataAccessLayer):
 
     def register_support_person(self, support_person_data: SupportPersonDTO) -> SupportPersonDTO:
         person_doc = self._get_or_create_person(support_person_data.Person)
-        support_doc = SupportPersonDocument(Person=person_doc).save()
+        
+        if not support_person_data.Parish or not support_person_data.Parish.id:
+            raise ValueError("No se proporcionó una parroquia válida para la persona de soporte.")
+            
+        parish_doc = ParishDocument.objects.with_id(support_person_data.Parish.id)
+        if not parish_doc:
+            raise ValueError(f"La parroquia con ID {support_person_data.Parish.id} no existe.")
+
+        # 3. ¡CORRECCIÓN! Ahora pasamos ambos campos requeridos.
+        support_doc = SupportPersonDocument(
+            Person=person_doc,
+            Parish=parish_doc  # <-- AÑADIMOS ESTO
+        ).save()
+        
         return self._to_dto(support_doc, SupportPersonDTO)
 
     def get_classes_by_parish_id(self, parish_id: str, include: list[str] = []) -> List[ClassDTO]:

@@ -4,8 +4,9 @@ from app.main.forms import *
 from app.main.data.dtos.base_dtos import *
 from app.main.data.dal.mongodb.mongodb_models import *
 from app.main.helpers import *
+from app.main.services.pdf_service import PDFService
 from app import dal
-from flask import request
+from flask import Response, request 
 
 bp = Blueprint('parish_priest', __name__)
 
@@ -26,6 +27,8 @@ def dashboard():
         include=["SupportPerson.Person","Catechist.Person","Level","ClassPeriod","Schedule.Classroom"]
     )
 
+    all_sacraments = dal.get_all_sacraments();
+    
     support_persons_with_levels = {}
 
     for p_class in parish_classes:
@@ -61,7 +64,8 @@ def dashboard():
         title="Dashboard del párroco",
         catechizings=catechizings,
         parish_classes=parish_classes,
-        support_persons_data=support_persons_with_levels, 
+        support_persons_data=support_persons_with_levels,
+        all_sacraments=all_sacraments,
         catechists=catechists,
         calculate_age=calculate_age
     )
@@ -440,7 +444,10 @@ def register_support_person():
             person_dto = build_person_dto_from_form(form.Person)
             
             # 3. Construir el DTO de SupportPerson
-            support_person_dto = SupportPersonDTO(Person=person_dto, Parish=priest_dto.Parish)
+            support_person_dto = SupportPersonDTO(
+                Person=person_dto, 
+                Parish=priest_dto.Parish
+            )
             
             dal.register_support_person(support_person_dto)
             flash('Persona de soporte registrada con éxito.', 'success')
@@ -450,3 +457,79 @@ def register_support_person():
             flash(f'Error al registrar persona de soporte: {e}', 'danger')
 
     return render_template('parish_priest/register_support_person.html', title='Registrar Persona de Soporte', form=form)
+
+@bp.route('/catechizing/<string:catechizing_id>/certificate')
+@login_required("ParishPriest")
+def generate_certificate(catechizing_id):
+    # 1. Obtener los datos...
+    catechizing = dal.get_catechizing_by_id(catechizing_id, include=[
+        "Person", "Class.Level", "Class.Catechist.Parish"
+    ])
+    if not catechizing:
+        flash("Catequizando no encontrado.", "danger")
+        return redirect(url_for('parish_priest.dashboard'))
+    
+    priest_dto = dal.get_parish_priest_by_id(session["id"])
+    if not priest_dto or not priest_dto.Parish:
+        flash("No se pudo cargar la información del párroco o su parroquia.", "danger")
+        return redirect(url_for('main.index'))
+    
+    parish_dto = priest_dto.Parish
+
+    # 2. Generar el PDF
+    pdf_service = PDFService()
+    pdf_bytes = pdf_service.generate_catechizing_certificate(catechizing, parish_dto)
+
+    # --- CINTURÓN DE SEGURIDAD ---
+    if not pdf_bytes:
+        # Si llegamos aquí, es porque la función de PDF retornó None.
+        # Mostramos un error claro en lugar de dejar que la app crashee.
+        print("ERROR CRÍTICO: La función de PDF retornó 'None'. Revisar la llamada a pdf.output().")
+        flash("Error interno del servidor al generar el certificado.", "danger")
+        return redirect(url_for('parish_priest.dashboard'))
+
+    # 3. Preparar nombre de archivo
+    full_name_file = f"certificado_{catechizing.Person.FirstName}_{catechizing.Person.FirstSurname}".replace(" ", "_")
+
+    # 4. Crear y devolver la respuesta para descargar
+    return Response(
+        pdf_bytes,
+        mimetype='application/pdf',
+        headers={'Content-Disposition': f'attachment;filename={full_name_file}.pdf'}
+    )
+
+
+@bp.route('/report/catechizings', methods=['POST'])
+@login_required("ParishPriest")
+def generate_report():
+    # 1. Obtener los datos de la parroquia y el filtro del formulario
+    priest_dto = dal.get_dto_by_user(session.get('username'))
+    sacrament_id_filter = request.form.get('sacrament_filter') # Obtiene el ID del sacramento del select
+    
+    current_parish_id = priest_dto.Parish.id
+    catechizings_list = dal.get_catechizings_by_parish(
+        current_parish_id,
+        include=["Person", "Class.Level", "Sacrament"]
+    )
+    
+    # 2. Filtrar los catequizandos si se aplicó un filtro de sacramento
+    report_title_filter = "Todos"
+    if sacrament_id_filter:
+        filtered_list = []
+        for c in catechizings_list:
+            if any(s.id == sacrament_id_filter for s in c.Sacrament):
+                filtered_list.append(c)
+        catechizings_list = filtered_list
+        
+        # Obtener el nombre del sacramento para el título del reporte
+        sacrament_obj = dal.get_sacrament_by_id(sacrament_id_filter) # Necesitarás este método en la DAL
+        if sacrament_obj:
+            report_title_filter = sacrament_obj.Name
+
+    # 4. Generar el PDF
+    pdf_service = PDFService()
+    pdf_bytes = pdf_service.generate_parish_report(catechizings_list, sacrament_filter=report_title_filter)
+
+    return Response(pdf_bytes,
+                    mimetype='application/pdf',
+                    headers={'Content-Disposition': 'inline;filename=reporte_catequizandos.pdf'})
