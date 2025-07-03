@@ -118,7 +118,6 @@ class SchoolDTO(BaseDTO):
 
 class ClassroomDTO(BaseDTO):
     ClassroomName: str
-    Parish: Optional['ParishDTO'] = None
 
 class CatechistDTO(BaseDTO):
     Person: Optional['PersonDTO'] = None

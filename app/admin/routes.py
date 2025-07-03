@@ -3,6 +3,7 @@ from app.auth.authentication import login_required
 from app.main.forms import *
 from app.main.data.duplicate_column_exception import DuplicateColumnException
 from app.main.forms import ParishForm
+from app.main.helpers import *
 from app import dal
 from app.main.data.dtos.base_dtos import *
 
@@ -37,73 +38,85 @@ def register_parish():
             SecondStreet=form.Address.Number.data, 
             Location=location_dto
         )
-        # classrooms_dto = [ClassroomDTO(**c) for c in form.Classroom.data] # La DAL no espera esto aún
-
+        
+        classrooms_dto = [ClassroomDTO(**c) for c in form.Classroom.data] 
+        
         parish_dto = ParishDTO(
             Name=form.Name.data,
             Address=address_dto,
             LogoImage=form.LogoImage.data,
-            IsMainParish=False, # O manejarlo con un campo en el form
-            Classroom=[] # El registro de aulas se puede manejar por separado
+            Classroom=classrooms_dto,
+            IsMainParish=False # O manejarlo con un campo en el form
         )
+        
         try:
             dal.register_parish(parish_dto)
             flash('Parroquia registrada con éxito.', 'success')
-            return redirect(url_for('main.admin_dashboard')) # Asumiendo un dashboard de admin
+            return redirect(url_for('admin.dashboard')) # Asumiendo un dashboard de admin
         except Exception as e:
             flash(f'Error al registrar la parroquia: {e}', 'danger')
             
     return render_template('admin/register_parish.html', title='Registrar Parroquia', form=form)
 
 
-@bp.route('/parish_priest/create', methods=['GET', 'POST'])
+@bp.route('/parish-priest/create', methods=['GET', 'POST'])
 @login_required("Admin")
 def register_parish_priest():
     form = ParishPriestForm()
     if form.validate_on_submit():
-        # Construir DTOs anidados
-        loc_dto = LocationDTO(**form.Person.Address.Location.data)
-        addr_dto = AddressDTO(**form.Person.Address.data, Location=loc_dto)
-        phone_type_dto = dal.get_phone_number_type_by_id(form.Person.PhoneNumber.PhoneNumberType.data)
-        phone_dto = PhoneNumberDTO(**form.Person.PhoneNumber.data, PhoneNumberType=phone_type_dto)
-        person_dto = PersonDTO(**form.Person.data, Address=addr_dto, PhoneNumber=phone_dto)
-
-        user_dto = UserDTO(**form.User.data, Role="ParishPriest")
-        parish_dto = dal.get_parish_by_id(form.Parish.data)
-
-        priest_dto = ParishPriestDTO(Person=person_dto, User=user_dto, Parish=parish_dto)
-        
         try:
+            # --- VERIFICACIÓN AÑADIDA ---
+            parish_dto = dal.get_parish_by_id(form.Parish.data)
+            if not parish_dto:
+                # Esto evita un error en la DAL si la parroquia no se encuentra.
+                flash(f"Error: La parroquia seleccionada no existe.", "danger")
+                return render_template('admin/register_parish_priest.html', title='Registrar Párroco', form=form)
+
+            priest_person_dto = build_person_dto_from_form(form.Person)
+            user_dto = UserDTO(**form.User.data, Role="ParishPriest")
+
+            priest_dto = ParishPriestDTO(
+                Person=priest_person_dto, 
+                User=user_dto, 
+                Parish=parish_dto
+            )
+            
             dal.register_parish_priest(priest_dto)
             flash('Párroco registrado con éxito.', 'success')
-            return redirect(url_for('main.admin_dashboard'))
+            return redirect(url_for('admin.dashboard')) # Asegúrate de que este endpoint sea correcto
+
         except Exception as e:
-            flash(f'Error al registrar párroco: {e}', 'danger')
+            # Es bueno loguear el error completo para depuración
+            flash(f'Error inesperado al registrar párroco: {e}', 'danger')
 
     return render_template('admin/register_parish_priest.html', title='Registrar Párroco', form=form)
 
 @bp.route('/catechist/create', methods=['GET', 'POST'])
 @login_required("Admin")
 def register_catechist():
-    form = CatechistForm() # Usando el formulario corregido
+    form = CatechistForm()
     if form.validate_on_submit():
-        # Lógica similar a la de registrar párroco para construir DTOs de Persona y Usuario
-        loc_dto = LocationDTO(**form.Person.Address.Location.data)
-        addr_dto = AddressDTO(**form.Person.Address.data, Location=loc_dto)
-        phone_type_dto = dal.get_phone_number_type_by_id(form.Person.PhoneNumber.PhoneNumberType.data)
-        phone_dto = PhoneNumberDTO(**form.Person.PhoneNumber.data, PhoneNumberType=phone_type_dto)
-        person_dto = PersonDTO(**form.Person.data, Address=addr_dto, PhoneNumber=phone_dto)
-        user_dto = UserDTO(**form.User.data, Role="Catechist")
-        
-        # Obtener la parroquia desde el nuevo campo del formulario
-        parish_dto = dal.get_parish_by_id(form.Parish.data)
-
-        catechist_dto = CatechistDTO(Person=person_dto, User=user_dto, Parish=parish_dto)
         try:
+            # --- VERIFICACIÓN AÑADIDA ---
+            parish_dto = dal.get_parish_by_id(form.Parish.data)
+            if not parish_dto:
+                flash(f"Error: La parroquia seleccionada no existe.", "danger")
+                return render_template('admin/register_catechist.html', title='Registrar Catequista', form=form)
+
+            catechist_person_dto = build_person_dto_from_form(form.Person)
+            user_dto = UserDTO(**form.User.data, Role="Catechist")
+
+            catechist_dto = CatechistDTO(
+                Person=catechist_person_dto, 
+                User=user_dto, 
+                Parish=parish_dto
+            )
+
             dal.register_catechist(catechist_dto)
             flash('Catequista registrado con éxito.', 'success')
-            return redirect(url_for('main.admin_dashboard'))
+            return redirect(url_for('admin.dashboard')) # Asegúrate de que este endpoint sea correcto
+
         except Exception as e:
-            flash(f'Error al registrar catequista: {e}', 'danger')
+            flash(f'Error inesperado al registrar catequista: {e}', 'danger')
 
     return render_template('admin/register_catechist.html', title='Registrar Catequista', form=form)

@@ -58,7 +58,6 @@ class MongoDBDAL(IDataAccessLayer):
 
         birth_location_doc = None
         if birth_loc_data := person_data.BirthLocation:
-            # CORRECCIÓN AQUÍ: Usamos .model_dump() en lugar de .to_dict()
             birth_location_doc = LocationDocument(**birth_loc_data.model_dump())
 
         new_person = PersonDocument(
@@ -175,15 +174,40 @@ class MongoDBDAL(IDataAccessLayer):
         # (Implementación ya proporcionada en la respuesta anterior, se mantiene igual)
         logo_path = None
         try:
-            if parish_data.LogoImage: logo_path = upload_image(parish_data.LogoImage)
+            if parish_data.LogoImage: 
+                logo_path = upload_image(parish_data.LogoImage)
+            
             address_doc = None
             if addr_data := parish_data.Address:
-                location_doc = LocationDocument(**addr_data.Location.to_dict())
+                location_doc = LocationDocument(**addr_data.Location.model_dump()) if addr_data.Location else None
                 address_doc = AddressDocument(MainStreet=addr_data.MainStreet, Number=addr_data.Number, SecondStreet=addr_data.SecondStreet, Location=location_doc)
             
-            parish_doc, created = ParishDocument.objects.get_or_create(Name=parish_data.Name, defaults={'Address': address_doc, 'Logo': logo_path})
+            # Agregar el nombre de las aulas a la BDD
+            classroom_docs = []
+            for classroom_data in parish_data.Classroom:
+                classroom_doc = ClassroomDocument(
+                    ClassroomName=classroom_data.ClassroomName
+                ).save()
+                
+                classroom_docs.append(classroom_doc)
+                
+            
+            # classroom_docs = parish_data.Classroom
+
+            parish_doc = ParishDocument(
+                Name=parish_data.Name,
+                Logo=logo_path,
+                Address=address_doc,
+                Classroom=classroom_docs,
+                IsMainParish=parish_data.IsMainParish
+            ).save()       
+            # parish_doc, created = ParishDocument.objects.get_or_create(
+            #     Name=parish_data.Name, 
+            #     defaults={'Address': address_doc, 'Logo': logo_path})
                     
-            if not created and logo_path: delete_image(logo_path)
+            if not parish_doc and logo_path: 
+                delete_image(logo_path)
+            
             return self._to_dto(parish_doc, ParishDTO, include=['Address.Location'])
         except NotUniqueError:
             if logo_path: delete_image(logo_path)
@@ -207,7 +231,7 @@ class MongoDBDAL(IDataAccessLayer):
         # Creación de documento address, para ingresarlo en el campo Address de Parish
         address_doc = None
         if addr_data := parish_data.Address:
-            location_doc = LocationDocument(**addr_data.Location.to_dict())
+            location_doc = LocationDocument(**addr_data.Location.model_dump()) if addr_data.Location else None
             address_doc = AddressDocument(MainStreet=addr_data.MainStreet, Number=addr_data.Number, SecondStreet=addr_data.SecondStreet, Location=location_doc)
         
         parish_doc.Logo = parish_data.Logo
