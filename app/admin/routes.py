@@ -59,10 +59,13 @@ def register_parish():
     return render_template('admin/register_parish.html', title='Registrar Parroquia', form=form)
 
 
-@bp.route('/parish-priest/create', methods=['GET', 'POST'])
+@bp.route('/parish_priest/create', methods=['GET', 'POST'])
 @login_required("Admin")
 def register_parish_priest():
     form = ParishPriestForm()
+    
+    form.User.Role.data = "ParishPriest"
+    
     if form.validate_on_submit():
         try:
             # --- VERIFICACIÓN AÑADIDA ---
@@ -73,7 +76,7 @@ def register_parish_priest():
                 return render_template('admin/register_parish_priest.html', title='Registrar Párroco', form=form)
 
             priest_person_dto = build_person_dto_from_form(form.Person)
-            user_dto = UserDTO(**form.User.data, Role="ParishPriest")
+            user_dto = UserDTO(**form.User.data)
 
             priest_dto = ParishPriestDTO(
                 Person=priest_person_dto, 
@@ -95,6 +98,9 @@ def register_parish_priest():
 @login_required("Admin")
 def register_catechist():
     form = CatechistForm()
+    
+    form.User.Role.data = "Catechist"
+    
     if form.validate_on_submit():
         try:
             # --- VERIFICACIÓN AÑADIDA ---
@@ -104,7 +110,7 @@ def register_catechist():
                 return render_template('admin/register_catechist.html', title='Registrar Catequista', form=form)
 
             catechist_person_dto = build_person_dto_from_form(form.Person)
-            user_dto = UserDTO(**form.User.data, Role="Catechist")
+            user_dto = UserDTO(**form.User.data)
 
             catechist_dto = CatechistDTO(
                 Person=catechist_person_dto, 

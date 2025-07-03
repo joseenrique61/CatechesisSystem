@@ -255,7 +255,12 @@ class MongoDBDAL(IDataAccessLayer):
         user_doc.set_password(priest_data.User.Password)
         user_doc.save()
 
-        priest_doc = ParishPriestDocument(Person=person_doc, User=user_doc, Parish=parish_doc).save()
+        priest_doc = ParishPriestDocument(
+            Person=person_doc, 
+            User=user_doc, 
+            Parish=parish_doc
+        ).save()
+        
         return self._to_dto(priest_doc, ParishPriestDTO)
 
     def get_parish_priest_by_id(self, user_id: str) -> Optional[ParishPriestDTO]:
@@ -289,14 +294,19 @@ class MongoDBDAL(IDataAccessLayer):
     # --- Catechist Methods ---
     def register_catechist(self, catechist_data: CatechistDTO) -> CatechistDTO:
         person_doc = self._get_or_create_person(catechist_data.Person)
-        parish_doc = self.get_parish_by_id(catechist_data.Parish)
+        parish_doc = ParishDocument.objects(id=catechist_data.Parish.id).first()
+        if not parish_doc: raise ValueError("Parish not found")
 
         user_doc = UserDocument(Username=catechist_data.User.Username, Role="Catechist")
         user_doc.set_password(catechist_data.User.Password)
         user_doc.save()
 
-        # PROBAR
-        catechist_doc = CatechistDocument(Person=person_doc, User=user_doc, Parish=parish_doc).save()
+        catechist_doc = CatechistDocument(
+            Person=person_doc, 
+            User=user_doc, 
+            Parish=parish_doc
+        ).save()
+        
         return self._to_dto(catechist_doc, CatechistDTO)
 
     def get_catechist_by_id(self, catechist_id: str, include: list[str] = []) -> Optional[CatechistDTO]:

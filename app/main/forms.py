@@ -29,7 +29,7 @@ class UserForm(Form):
             validators.EqualTo('ConfirmPassword', message='Las contraseñas no coinciden')
         ])
     ConfirmPassword = PasswordField('Confirmar contraseña', [validators.Length(min=1, max=100)])
-    Role = StringField("")
+    Role = HiddenField()
 
     def validate_Password(self, field):
         if field.data:
