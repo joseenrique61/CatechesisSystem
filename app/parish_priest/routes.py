@@ -280,7 +280,7 @@ def update_catechizing(catechizing_id):
             # --- ¡LÓGICA DE CONSTRUCCIÓN DE DTO SIMPLIFICADA! ---
             
             # 1. Usamos el helper directamente sobre form.Person, que ahora tiene todos los datos.
-            person_dto = build_person_dto_from_form(form.Person)
+            person_dto = rebuild_person_dto_from_form(form.Person)
 
             # 2. Lógica de Health Information (similar a la de 'create')
             health_info_form = form.HealthInformation
