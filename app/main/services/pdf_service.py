@@ -1,7 +1,7 @@
 # app/main/services/pdf_service.py
 
 from fpdf import FPDF
-from datetime import datetime
+import datetime
 from app.main.helpers import *
 
 class PDFService:
@@ -35,7 +35,7 @@ class PDFService:
             f"ha completado satisfactoriamente el nivel de catequesis de\n\n"
             f"'{level_name}'\n\n"
             f"en la Parroquia {parish_name}.\n\n"
-            f"Emitido el {datetime.now().strftime('%d de %B de %Y')}."
+            f"Emitido el {datetime.datetime.now().strftime('%d de %B de %Y')}."
         )
         
         pdf.multi_cell(0, 10, txt=texto_certificado, align='C')
