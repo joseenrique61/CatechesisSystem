@@ -4,17 +4,19 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_mongoengine import MongoEngine
 
 # Instanciar extensiones fuera de la fábrica
-db = None
-DB_TYPE = None
+db = SQLAlchemy()
+db_type = None
 # Podrías añadir otras aquí (Migrate, LoginManager, etc.) más adelante
 
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
 
-    DB_TYPE = app.config["DB_TYPE"]
+    global db_type
+    db_type = app.config["DB_TYPE"]
     # Inicializar extensiones con la app
-    db = SQLAlchemy() if DB_TYPE == "mssql" else MongoEngine()
+    #global db
+    # db = SQLAlchemy() if db_type == "mssql" else MongoEngine()
     db.init_app(app)
 
     # Registrar Blueprints
@@ -36,7 +38,7 @@ def create_app(config_class=Config):
     # Asegurar que los modelos sean conocidos por SQLAlchemy dentro del contexto de la app
     # Necesario si no usas algo como Flask-Migrate que los importa
     with app.app_context():
-        if DB_TYPE == 'mssql':
+        if db_type == 'mssql':
             from .main.data.dal.sql_server import sql_models
         else: 
             from .main.data.dal.mongodb import mongodb_models
@@ -49,11 +51,7 @@ def get_dal():
     """
     Devuelve la instancia de DAL (Data Access Layer) para interactuar con la base de datos.
     """
-    if DB_TYPE == 'mssql':
-        from app.main.data.dal.sql_server.sql_dal import SQLAlchemyDAL
-        return SQLAlchemyDAL(db.session)
-    else:
-        from app.main.data.dal.mongodb.mongodb_dal import MongoDBDAL
-        return MongoDBDAL(db)
+    from app.main.data.dal.sql_server.sql_dal import SQLAlchemyDAL
+    return SQLAlchemyDAL(db.session)
 
 dal = get_dal()
