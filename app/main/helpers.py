@@ -88,7 +88,6 @@ def rebuild_person_dto_from_form(person_form) -> PersonDTO:
     # ANTES (INCORRECTO): person_dto = PersonDTO(**person_form.data, Address=...)
     # AHORA (CORRECTO):
     person_dto = PersonDTO(
-        SecondSurname=person_form.SecondSurname.data,
         EmailAddress=person_form.EmailAddress.data,
         Address=address_dto, # Pasamos el DTO de Address que creamos
         PhoneNumber=phone_number_dto, # Pasamos el DTO de PhoneNumber que creamos
